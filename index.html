@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Match-3 練習用 配布版</title>
+<style>
+:root{
+  --bg:#10141a; --panel:#1a212b; --text:#f5f7fa; --sub:#aeb8c5;
+  --cell:min(9.7vw,52px); --gap:5px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  margin:0;min-height:100vh;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;
+  display:flex;justify-content:center;align-items:flex-start
+}
+.app{width:min(100%,560px);padding:14px 10px 28px}
+h1{font-size:18px;margin:0 0 8px}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}
+.score,.timerBox,.chainBox{background:var(--panel);padding:8px 10px;border-radius:12px;font-weight:800}
+.timerBox{min-width:78px;text-align:center}
+.chainBox{min-width:72px;text-align:center;color:#ffe66d}
+.durationLabel{font-size:13px;color:#c3ceda;margin:4px 0 9px}
+.durationGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:0 0 16px}
+.durationBtn{padding:9px 4px;border-radius:10px;background:#273343;color:#e9f0f7;border:1px solid rgba(255,255,255,.1)}
+.durationBtn.selected{background:#f2f5f8;color:#16202a;outline:2px solid #7cc7ff}
+.resultScreen{
+  position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;
+  background:rgba(8,12,17,.94);padding:22px
+}
+.resultScreen.show{display:flex}
+.resultCard{
+  width:min(92vw,420px);background:#1b2430;border:1px solid rgba(255,255,255,.13);
+  border-radius:22px;padding:28px 22px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.4)
+}
+.resultTime{font-size:19px;color:#b9c6d5;font-weight:800;margin-bottom:8px}
+.resultScore{font-size:42px;font-weight:1000;letter-spacing:.02em;margin:4px 0 8px}
+.resultLabel{font-size:13px;color:#9eacbd;margin-bottom:20px}
+.resultBtns{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.resultBtns button{padding:12px 8px}
+button{border:0;border-radius:10px;padding:9px 12px;font-weight:800;background:#edf2f7;color:#17202a}
+.msg{height:24px;text-align:center;margin:6px 0;color:#d8e0ea;font-size:13px}
+.boardWrap{
+  position:relative;
+  width:max-content;
+  margin:auto;
+}
+.board{
+  margin:auto;display:grid;grid-template-columns:repeat(9,var(--cell));
+  gap:var(--gap);justify-content:center;touch-action:none;user-select:none;
+  position:relative;z-index:1
+}
+.fx{
+  position:absolute;inset:0;z-index:5;pointer-events:none;overflow:visible
+}
+.fxBeam{
+  position:absolute;border-radius:999px;
+  background:rgba(255,255,255,.96);
+  box-shadow:0 0 8px 3px rgba(255,255,255,.9),0 0 18px 8px rgba(120,220,255,.75);
+  transform-origin:center;
+  opacity:0;
+  animation:beamFlash .34s ease-out forwards
+}
+@keyframes beamFlash{
+  0%{opacity:0;transform:scaleX(.05)}
+  25%{opacity:1}
+  100%{opacity:0;transform:scaleX(1)}
+}
+.fxBeam.v{animation-name:beamFlashV}
+@keyframes beamFlashV{
+  0%{opacity:0;transform:scaleY(.05)}
+  25%{opacity:1}
+  100%{opacity:0;transform:scaleY(1)}
+}
+.fxBurst{
+  position:absolute;border:4px solid white;border-radius:50%;
+  box-shadow:0 0 12px 5px rgba(255,220,90,.95), inset 0 0 18px rgba(255,255,255,.85);
+  transform:translate(-50%,-50%) scale(.15);
+  opacity:1;
+  animation:burst .38s ease-out forwards
+}
+@keyframes burst{
+  0%{transform:translate(-50%,-50%) scale(.15);opacity:1}
+  75%{opacity:.95}
+  100%{transform:translate(-50%,-50%) scale(2.6);opacity:0}
+}
+.fxParticle{
+  position:absolute;width:8px;height:8px;border-radius:50%;
+  background:white;box-shadow:0 0 8px 2px rgba(255,220,90,.9);
+  transform:translate(-50%,-50%);
+  animation:particle .4s ease-out forwards
+}
+@keyframes particle{
+  from{opacity:1;transform:translate(-50%,-50%) translate(0,0) scale(1)}
+  to{opacity:0;transform:translate(-50%,-50%) translate(var(--dx),var(--dy)) scale(.2)}
+}
+.fxRay{
+  position:absolute;height:3px;border-radius:999px;
+  background:linear-gradient(90deg,rgba(255,255,255,.98),rgba(255,255,255,.75),rgba(255,255,255,0));
+  box-shadow:0 0 6px 2px rgba(210,245,255,.9);
+  transform-origin:0 50%;
+  opacity:0;
+  animation:ray .34s ease-out forwards
+}
+@keyframes ray{
+  0%{opacity:0;transform:rotate(var(--ang)) scaleX(.05)}
+  28%{opacity:1}
+  100%{opacity:0;transform:rotate(var(--ang)) scaleX(1)}
+}
+.fxHit{
+  position:absolute;width:18px;height:18px;border-radius:50%;
+  border:3px solid white;transform:translate(-50%,-50%) scale(.25);
+  animation:hit .36s ease-out forwards
+}
+@keyframes hit{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.25)}
+  35%{opacity:1}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.8)}
+}
+.tile{
+  width:var(--cell);height:var(--cell);border-radius:50%;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid rgba(255,255,255,.22);
+  box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),0 1px 2px rgba(0,0,0,.3);
+  transition:transform .12s ease,opacity .12s ease
+}
+.c0{background:#ff0000}.c1{background:#0000ff}.c2{background:#00ff00}
+.c3{background:#ffff00}.c4{background:#ff00ff}.c5{background:#00ffff}
+.mark{font-size:clamp(20px,5.2vw,30px);font-weight:900;color:white;text-shadow:0 1px 4px rgba(0,0,0,.7);line-height:1;font-family:system-ui,"Apple Color Emoji","Noto Color Emoji",sans-serif}
+.lineH .mark::after,.lineV .mark::after{content:""}
+.bomb .mark::after,.flower .mark::after{content:""}
+.specialTile{background:#3a3f46;border-color:rgba(255,255,255,.45)}
+.flower{background:#3a3f46}
+.sel{outline:3px solid white;outline-offset:1px;transform:scale(.94)}
+@keyframes fallIn{from{transform:translateY(var(--fall-y))}to{transform:translateY(0)}}
+.fall{animation:fallIn .24s cubic-bezier(.22,.75,.25,1) both}
+@keyframes pop{0%{transform:scale(1);opacity:1}100%{transform:scale(.15);opacity:0}}
+.pop{animation:pop .13s ease-in forwards}
+.help{margin-top:14px;background:var(--panel);padding:12px;border-radius:12px;color:var(--sub);font-size:13px;line-height:1.65}
+
+.titleScreen{
+  position:fixed; inset:0; z-index:9999;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(180deg,#0e131a,#151d27);
+  padding:24px;
+}
+.titleCard{
+  width:min(92vw,420px);
+  background:#1b2430;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:22px;
+  padding:28px 22px;
+  text-align:center;
+  box-shadow:0 18px 50px rgba(0,0,0,.35);
+}
+.titleLogo{
+  font-size:30px;
+  font-weight:900;
+  letter-spacing:.04em;
+  margin-bottom:10px;
+}
+.titleSub{
+  color:#b9c4d2;
+  font-size:14px;
+  line-height:1.7;
+  margin-bottom:18px;
+}
+.fanmade{
+  display:inline-block;
+  margin-bottom:20px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:#101720;
+  border:1px solid rgba(255,255,255,.14);
+  color:#dbe3ed;
+  font-size:12px;
+  font-weight:700;
+}
+.startBtn{
+  width:100%;
+  padding:13px 16px;
+  border-radius:14px;
+  font-size:16px;
+  font-weight:900;
+}
+.note{
+  margin-top:14px;
+  color:#8f9aaa;
+  font-size:11px;
+  line-height:1.6;
+}
+.titleScreen.hidden{display:none}
+
+</style>
+</head>
+<body>
+
+<div id="titleScreen" class="titleScreen">
+  <div class="titleCard">
+    <div style="font-size:13px;color:#9fb0c3;font-weight:700;letter-spacing:.04em;margin-bottom:8px">
+      仲間六夜 feat. ChatGPT
+    </div>
+    <div class="titleLogo">Match-3 練習用</div>
+    <div class="titleSub">
+      シンプルなマッチ3の練習用ミニゲームです。<br>
+      ステージ制なし・広告なし・ブラウザでそのまま遊べます。
+    </div>
+    <div class="fanmade">非公式・ファンメイド</div>
+    <div class="durationLabel">制限時間を選択</div>
+    <div id="durationGrid" class="durationGrid">
+      <button class="durationBtn" data-min="1">1分</button>
+      <button class="durationBtn" data-min="2">2分</button>
+      <button class="durationBtn selected" data-min="3">3分</button>
+      <button class="durationBtn" data-min="4">4分</button>
+      <button class="durationBtn" data-min="5">5分</button>
+      <button class="durationBtn" data-min="6">6分</button>
+      <button class="durationBtn" data-min="7">7分</button>
+      <button class="durationBtn" data-min="8">8分</button>
+      <button class="durationBtn" data-min="9">9分</button>
+      <button class="durationBtn" data-min="10">10分</button>
+    </div>
+    <button id="startBtn" class="startBtn">3分でゲームをはじめる</button>
+    <div class="note">
+      本作は練習目的の非公式ファンメイド作品です。<br>
+      各サービス・運営会社とは関係ありません。
+    </div>
+  </div>
+</div>
+<div class="app">
+  <div style="font-size:12px;color:#91a0b2;font-weight:700;margin-bottom:4px">仲間六夜 feat. ChatGPT</div>
+  <h1>Match-3 練習用</h1>
+  <div class="top">
+    <div class="score">SCORE <span id="score">0</span></div>
+    <div class="chainBox">CHAIN <span id="chain">×1.00</span></div>
+    <div class="timerBox">TIME <span id="timer">3:00</span></div>
+    <button id="reset">やり直し</button>
+  </div>
+  <div id="msg" class="msg">隣のブロックへスワイプ</div>
+  <div class="boardWrap">
+    <div id="board" class="board"></div>
+    <div id="fx" class="fx"></div>
+  </div>
+  <div class="help">
+    9×7盤面。鮮やかな6色の丸ブロックを3個以上で消去。4直列で列消し、同色2×2またはL/T字の5個つながりで爆弾、5個直列で花。<br>
+    2×2は「移動したブロックの位置」に爆弾を生成。単体爆弾は着地点中心の5×5ひし形範囲を消去します。<br>
+    列消し・爆弾・花は、同色を3個つなげなくても交換した時点で発動します。<br>
+    列＋列＝十字、爆弾＋爆弾＝範囲2倍、列＋爆弾＝太い十字。<br>
+    特殊ブロックはすべて無色で、通常の色マッチには参加しません。花＋通常色＝その色を全消し。花＋矢印／爆弾＝同じ効果をランダム6か所で発動。花＋花＝盤面全消し。<br>スコアは1ブロック100点を基準に、連鎖ごとに×0.25ずつ上昇（最大×2.00）。
+      <br><span style="font-size:11px;color:#8f9aaa">非公式・ファンメイド / 練習用 / v2.5</span>
+  </div>
+</div>
+
+<div id="resultScreen" class="resultScreen">
+  <div class="resultCard">
+    <div id="resultTime" class="resultTime">3分 CHALLENGE</div>
+    <div id="resultScore" class="resultScore">0</div>
+    <div class="resultLabel">FINAL SCORE</div>
+    <div class="resultBtns">
+      <button id="retryBtn">もう一度</button>
+      <button id="titleBtn">タイトルへ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const titleScreen=document.getElementById("titleScreen");
+const startBtn=document.getElementById("startBtn");
+const resultScreen=document.getElementById("resultScreen");
+const retryBtn=document.getElementById("retryBtn");
+const titleBtn=document.getElementById("titleBtn");
+const resultScoreEl=document.getElementById("resultScore");
+const resultTimeEl=document.getElementById("resultTime");
+const timerEl=document.getElementById("timer");
+const chainEl=document.getElementById("chain");
+
+const ROWS=7, COLS=9, COLORS=6;
+const BASE_SCORE=100;
+let B=[], score=0, selected=null, lock=false, pointerStart=null, nextId=1;
+let selectedMinutes=3, remainingSeconds=180, timerId=null;
+let gameRunning=false, pendingFinish=false, chainLevel=1;
+
+function chainMultiplier(){
+  return Math.min(2, 1 + (chainLevel-1)*0.25);
+}
+function updateChain(){
+  chainEl.textContent=`×${chainMultiplier().toFixed(2)}`;
+}
+function formatTime(sec){
+  sec=Math.max(0,sec);
+  return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`;
+}
+function updateTimer(){
+  timerEl.textContent=formatTime(remainingSeconds);
+}
+function stopTimer(){
+  if(timerId){clearInterval(timerId);timerId=null;}
+}
+function finishGame(){
+  if(!gameRunning && resultScreen.classList.contains("show"))return;
+  gameRunning=false;
+  pendingFinish=false;
+  stopTimer();
+  selected=null;
+  render();
+  resultTimeEl.textContent=`${selectedMinutes}分 CHALLENGE`;
+  resultScoreEl.textContent=score.toLocaleString("ja-JP");
+  resultScreen.classList.add("show");
+}
+function startGame(minutes=selectedMinutes){
+  selectedMinutes=minutes;
+  remainingSeconds=minutes*60;
+  score=0;
+  chainLevel=1;
+  pendingFinish=false;
+  gameRunning=true;
+  lock=false;
+  resultScreen.classList.remove("show");
+  titleScreen.classList.add("hidden");
+  newBoard(false);
+  updateTimer();
+  updateChain();
+  stopTimer();
+  timerId=setInterval(()=>{
+    if(!gameRunning)return;
+    remainingSeconds--;
+    updateTimer();
+    if(remainingSeconds<=0){
+      stopTimer();
+      gameRunning=false;
+      if(lock) pendingFinish=true;
+      else finishGame();
+    }
+  },1000);
+}
+
+document.querySelectorAll(".durationBtn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    selectedMinutes=Number(btn.dataset.min);
+    document.querySelectorAll(".durationBtn").forEach(b=>b.classList.toggle("selected",b===btn));
+    startBtn.textContent=`${selectedMinutes}分でゲームをはじめる`;
+  });
+});
+startBtn.addEventListener("click",()=>startGame(selectedMinutes));
+retryBtn.addEventListener("click",()=>startGame(selectedMinutes));
+titleBtn.addEventListener("click",()=>{
+  stopTimer(); gameRunning=false; pendingFinish=false;
+  resultScreen.classList.remove("show");
+  titleScreen.classList.remove("hidden");
+});
+
+
+const boardEl=document.getElementById("board");
+const scoreEl=document.getElementById("score");
+const msgEl=document.getElementById("msg");
+const fxEl=document.getElementById("fx");
+
+const rnd=n=>Math.floor(Math.random()*n);
+const inside=(r,c)=>r>=0&&r<ROWS&&c>=0&&c<COLS;
+const K=(r,c)=>`${r},${c}`;
+const parseK=s=>s.split(",").map(Number);
+const make=(color,special=null)=>({color,special,id:nextId++});
+const sleep=ms=>new Promise(res=>setTimeout(res,ms));
+const isLine=s=>s==="lineH"||s==="lineV";
+
+function setMsg(s){ msgEl.textContent=s; }
+
+function newBoard(resetScore=true){
+  B=Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    let color, guard=0;
+    do{
+      color=rnd(COLORS); guard++;
+    }while(guard<100 && (
+      (c>=2 && B[r][c-1]?.color===color && B[r][c-2]?.color===color) ||
+      (r>=2 && B[r-1][c]?.color===color && B[r-2][c]?.color===color) ||
+      (r>=1 && c>=1 && B[r-1][c]?.color===color && B[r][c-1]?.color===color && B[r-1][c-1]?.color===color)
+    ));
+    B[r][c]=make(color);
+  }
+  if(resetScore) score=0;
+  selected=null; lock=false; chainLevel=1; updateChain();
+  setMsg("隣のブロックへスワイプ");
+  render();
+}
+
+function render(dropMap=null, popSet=null){
+  boardEl.innerHTML="";
+  scoreEl.textContent=score;
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const t=B[r][c];
+    const d=document.createElement("div");
+    d.className="tile";
+    if(t?.special){
+      d.classList.add("specialTile",t.special);
+    }else{
+      d.classList.add(`c${t?.color??0}`);
+    }
+    if(selected?.r===r && selected?.c===c) d.classList.add("sel");
+    if(dropMap && t && dropMap.has(t.id)){
+      d.classList.add("fall");
+      d.style.setProperty("--fall-y",`${dropMap.get(t.id)}px`);
+    }
+    if(popSet?.has(K(r,c))) d.classList.add("pop");
+    d.dataset.r=r; d.dataset.c=c;
+    const m=document.createElement("span");
+    m.className="mark";
+    if(t?.special==="lineH") m.textContent="↔️";
+    else if(t?.special==="lineV") m.textContent="↕️";
+    else if(t?.special==="bomb") m.textContent="💣";
+    else if(t?.special==="flower") m.textContent="🌸";
+    d.appendChild(m);
+    d.addEventListener("click",()=>tap(r,c));
+    boardEl.appendChild(d);
+  }
+}
+
+function adjacent(a,b){return Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1}
+function swap(a,b){[B[a.r][a.c],B[b.r][b.c]]=[B[b.r][b.c],B[a.r][a.c]]}
+
+async function tap(r,c){
+  if(lock||!gameRunning)return;
+  if(!selected){selected={r,c};render();return}
+  const a=selected,b={r,c}; selected=null; render();
+  if(adjacent(a,b)) await trySwap(a,b);
+  else {selected=b;render()}
+}
+
+boardEl.addEventListener("pointerdown",e=>{
+  const t=e.target.closest(".tile"); if(!t||lock||!gameRunning)return;
+  pointerStart={r:+t.dataset.r,c:+t.dataset.c,x:e.clientX,y:e.clientY};
+});
+boardEl.addEventListener("pointerup",e=>{
+  if(!pointerStart||lock||!gameRunning)return;
+  const dx=e.clientX-pointerStart.x,dy=e.clientY-pointerStart.y;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<18){pointerStart=null;return}
+  let dr=0,dc=0;
+  if(Math.abs(dx)>Math.abs(dy)) dc=dx>0?1:-1; else dr=dy>0?1:-1;
+  const a={r:pointerStart.r,c:pointerStart.c};
+  const b={r:a.r+dr,c:a.c+dc}; pointerStart=null;
+  if(inside(b.r,b.c)){selected=null;render();trySwap(a,b)}
+});
+
+function addAll(dst,src){for(const x of src)dst.add(x);return dst}
+function allBoard(){
+  const s=new Set();for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)s.add(K(r,c));return s;
+}
+function lineSet(r,c,dir,thick=0){
+  const s=new Set();
+  if(dir==="H"){
+    for(let rr=Math.max(0,r-thick);rr<=Math.min(ROWS-1,r+thick);rr++)
+      for(let cc=0;cc<COLS;cc++)s.add(K(rr,cc));
+  }else{
+    for(let cc=Math.max(0,c-thick);cc<=Math.min(COLS-1,c+thick);cc++)
+      for(let rr=0;rr<ROWS;rr++)s.add(K(rr,cc));
+  }
+  return s;
+}
+function crossSet(r,c,thick=0){const s=lineSet(r,c,"H",thick);return addAll(s,lineSet(r,c,"V",thick))}
+function bombSet(r,c,radius=2){
+  const s=new Set();
+  for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++)
+    if(Math.abs(rr-r)+Math.abs(cc-c)<=radius)s.add(K(rr,cc));
+  return s;
+}
+
+function bombBombSet(r,c){
+  const s=new Set();
+  for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++){
+    if(Math.abs(rr-r)+Math.abs(cc-c)<=3) s.add(K(rr,cc));
+  }
+  return s;
+}
+function effectAt(r,c,special){
+  if(special==="lineH")return lineSet(r,c,"H");
+  if(special==="lineV")return lineSet(r,c,"V");
+  if(special==="bomb")return bombSet(r,c,2);
+  return new Set([K(r,c)]);
+}
+
+function scanMatches(){
+  const cells=new Set(), groups=[], squares=[];
+  for(let r=0;r<ROWS;r++){
+    let c=0;
+    while(c<COLS){
+      const color=B[r][c]?.special ? null : B[r][c]?.color; let e=c+1;
+      while(e<COLS && !B[r][e]?.special && B[r][e]?.color===color)e++;
+      if(color!=null && e-c>=3){
+        const g=[];for(let x=c;x<e;x++){g.push({r,c:x});cells.add(K(r,x))}
+        groups.push({dir:"H",cells:g,color});
+      }
+      c=e;
+    }
+  }
+  for(let c=0;c<COLS;c++){
+    let r=0;
+    while(r<ROWS){
+      const color=B[r][c]?.special ? null : B[r][c]?.color; let e=r+1;
+      while(e<ROWS && !B[e][c]?.special && B[e][c]?.color===color)e++;
+      if(color!=null && e-r>=3){
+        const g=[];for(let x=r;x<e;x++){g.push({r:x,c});cells.add(K(x,c))}
+        groups.push({dir:"V",cells:g,color});
+      }
+      r=e;
+    }
+  }
+  for(let r=0;r<ROWS-1;r++)for(let c=0;c<COLS-1;c++){
+    const color=B[r][c]?.special ? null : B[r][c]?.color;
+    if(color!=null &&
+       !B[r][c+1]?.special && !B[r+1][c]?.special && !B[r+1][c+1]?.special &&
+       B[r][c+1]?.color===color && B[r+1][c]?.color===color && B[r+1][c+1]?.color===color){
+      const sq=[{r,c},{r,c:c+1},{r:r+1,c},{r:r+1,c:c+1}];
+      squares.push({cells:sq,color});
+      for(const p of sq)cells.add(K(p.r,p.c));
+    }
+  }
+  return {cells,groups,squares};
+}
+
+
+function squareContaining(pos){
+  if(!pos)return null;
+  const color=B[pos.r]?.[pos.c]?.special ? null : B[pos.r]?.[pos.c]?.color;
+  if(color==null)return null;
+  const starts=[
+    {r:pos.r,c:pos.c},
+    {r:pos.r-1,c:pos.c},
+    {r:pos.r,c:pos.c-1},
+    {r:pos.r-1,c:pos.c-1}
+  ];
+  for(const s of starts){
+    if(s.r<0||s.c<0||s.r>=ROWS-1||s.c>=COLS-1)continue;
+    const pts=[
+      {r:s.r,c:s.c},{r:s.r,c:s.c+1},
+      {r:s.r+1,c:s.c},{r:s.r+1,c:s.c+1}
+    ];
+    if(pts.every(p=>{
+      const t=B[p.r][p.c];
+      return t && !t.special && t.color===color;
+    })) return {cells:pts,color};
+  }
+  return null;
+}
+
+
+function fiveShapeContaining(pos){
+  if(!pos)return null;
+  const t0=B[pos.r]?.[pos.c];
+  if(!t0 || t0.special)return null;
+  const color=t0.color;
+
+  // Collect same-color orthogonally-connected cells around the moved position.
+  const seen=new Set(), stack=[{r:pos.r,c:pos.c}], cells=[];
+  while(stack.length){
+    const p=stack.pop(), k=K(p.r,p.c);
+    if(seen.has(k) || !inside(p.r,p.c))continue;
+    const t=B[p.r][p.c];
+    if(!t || t.special || t.color!==color)continue;
+    seen.add(k); cells.push(p);
+    stack.push({r:p.r-1,c:p.c},{r:p.r+1,c:p.c},{r:p.r,c:p.c-1},{r:p.r,c:p.c+1});
+  }
+
+  if(cells.length<5)return null;
+
+  // Straight five is handled as a flower elsewhere, so exclude any pure 5+ line.
+  const sameRow=cells.every(p=>p.r===cells[0].r);
+  const sameCol=cells.every(p=>p.c===cells[0].c);
+  if(sameRow || sameCol)return null;
+
+  // Require that the connected shape contains both a horizontal and vertical arm.
+  const rows=new Map(), cols=new Map();
+  for(const p of cells){
+    rows.set(p.r,(rows.get(p.r)||0)+1);
+    cols.set(p.c,(cols.get(p.c)||0)+1);
+  }
+  const hasH=[...rows.values()].some(n=>n>=3);
+  const hasV=[...cols.values()].some(n=>n>=3);
+  if(!hasH || !hasV)return null;
+
+  return {cells,color};
+}
+
+function chooseSpecial(match,preferred=null,moveDir=null){
+  const contains=(arr,p)=>p&&arr.some(q=>q.r===p.r&&q.c===p.c);
+
+  // 5直列
+  let g=match.groups.find(x=>x.cells.length>=5 && contains(x.cells,preferred));
+  if(!g)g=match.groups.find(x=>x.cells.length>=5);
+  if(g){
+    const pos=contains(g.cells,preferred)?preferred:g.cells[Math.floor(g.cells.length/2)];
+    return {pos,special:"flower",color:g.color};
+  }
+
+  // L字/T字など、直線ではない5個以上のつながり
+  const shaped=fiveShapeContaining(preferred);
+  if(shaped){
+    return {pos:preferred,special:"bomb",color:shaped.color,shapeCells:shaped.cells};
+  }
+
+  // 2x2
+  let sq=match.squares.find(x=>contains(x.cells,preferred));
+  if(!sq)sq=match.squares[0];
+  if(sq){
+    const pos=contains(sq.cells,preferred)?preferred:sq.cells[0];
+    return {pos,special:"bomb",color:sq.color};
+  }
+
+  // 4直列
+  g=match.groups.find(x=>x.cells.length===4 && contains(x.cells,preferred));
+  if(!g)g=match.groups.find(x=>x.cells.length===4);
+  if(g){
+    const pos=contains(g.cells,preferred)?preferred:g.cells[1];
+    return {pos,special:g.dir==="H"?"lineH":"lineV",color:g.color};
+  }
+  return null;
+}
+
+function expandTriggeredSpecials(clearSet,protectedKey=null){
+  const fired=new Set(), triggers=[];
+  let changed=true;
+  while(changed){
+    changed=false;
+    for(const s of [...clearSet]){
+      if(s===protectedKey || fired.has(s))continue;
+      const [r,c]=parseK(s),t=B[r][c];
+      if(!t?.special || t.special==="flower")continue;
+      fired.add(s);
+      triggers.push({r,c,special:t.special});
+      for(const x of effectAt(r,c,t.special)){
+        if(!clearSet.has(x)){clearSet.add(x);changed=true}
+      }
+    }
+  }
+  return triggers;
+}
+
+
+function cellCenter(r,c){
+  const tile=boardEl.querySelector(`.tile[data-r="${r}"][data-c="${c}"]`);
+  if(!tile)return {x:0,y:0,w:0,h:0};
+  const tr=tile.getBoundingClientRect(), fr=fxEl.getBoundingClientRect();
+  return {x:tr.left-fr.left+tr.width/2,y:tr.top-fr.top+tr.height/2,w:tr.width,h:tr.height};
+}
+
+function clearFx(){ fxEl.innerHTML=""; }
+
+function lineFx(r,c,special){
+  const p=cellCenter(r,c), fr=fxEl.getBoundingClientRect();
+  const d=document.createElement("div");
+  d.className="fxBeam"+(special==="lineV"?" v":"");
+  if(special==="lineH"){
+    d.style.left="0px"; d.style.top=`${p.y-3}px`;
+    d.style.width=`${fr.width}px`; d.style.height="6px";
+  }else{
+    d.style.left=`${p.x-3}px`; d.style.top="0px";
+    d.style.width="6px"; d.style.height=`${fr.height}px`;
+  }
+  fxEl.appendChild(d);
+}
+
+function bombFx(r,c,boost=1){
+  const p=cellCenter(r,c);
+  const ring=document.createElement("div");
+  ring.className="fxBurst";
+  ring.style.left=`${p.x}px`; ring.style.top=`${p.y}px`;
+  ring.style.width=`${Math.max(34,p.w*1.15*boost)}px`;
+  ring.style.height=ring.style.width;
+  fxEl.appendChild(ring);
+
+  const count=12;
+  for(let i=0;i<count;i++){
+    const q=document.createElement("div");
+    q.className="fxParticle";
+    const a=(Math.PI*2*i/count)+(Math.random()*.25);
+    const dist=(p.w*1.4+Math.random()*p.w)*boost;
+    q.style.left=`${p.x}px`;q.style.top=`${p.y}px`;
+    q.style.setProperty("--dx",`${Math.cos(a)*dist}px`);
+    q.style.setProperty("--dy",`${Math.sin(a)*dist}px`);
+    fxEl.appendChild(q);
+  }
+}
+
+function flowerFx(origin,targets){
+  const a=cellCenter(origin.r,origin.c);
+  for(const t of targets){
+    const b=cellCenter(t.r,t.c);
+    const dx=b.x-a.x,dy=b.y-a.y;
+    const len=Math.hypot(dx,dy),ang=Math.atan2(dy,dx)*180/Math.PI;
+    const ray=document.createElement("div");
+    ray.className="fxRay";
+    ray.style.left=`${a.x}px`;ray.style.top=`${a.y}px`;
+    ray.style.width=`${len}px`;
+    ray.style.setProperty("--ang",`${ang}deg`);
+    fxEl.appendChild(ray);
+
+    const hit=document.createElement("div");
+    hit.className="fxHit";
+    hit.style.left=`${b.x}px`;hit.style.top=`${b.y}px`;
+    fxEl.appendChild(hit);
+  }
+}
+
+async function playTriggerFx(triggers){
+  if(!triggers?.length)return;
+  clearFx();
+  for(const t of triggers){
+    if(t.special==="lineH"||t.special==="lineV") lineFx(t.r,t.c,t.special);
+    else if(t.special==="bomb") bombFx(t.r,t.c,1);
+  }
+  await sleep(340);
+  clearFx();
+}
+
+function getStepPx(){
+  const tile=boardEl.querySelector(".tile");
+  if(!tile)return 60;
+  const gap=parseFloat(getComputedStyle(boardEl).rowGap)||5;
+  return tile.getBoundingClientRect().height+gap;
+}
+
+function collapse(){
+  const step=getStepPx(), drops=new Map();
+  for(let c=0;c<COLS;c++){
+    const survivors=[];
+    for(let r=ROWS-1;r>=0;r--)if(B[r][c])survivors.push({tile:B[r][c],old:r});
+    for(let r=0;r<ROWS;r++)B[r][c]=null;
+
+    let wr=ROWS-1;
+    for(const item of survivors){
+      B[wr][c]=item.tile;
+      const fall=wr-item.old;
+      if(fall>0)drops.set(item.tile.id,-fall*step);
+      wr--;
+    }
+
+    let spawn=1;
+    while(wr>=0){
+      const t=make(rnd(COLORS));
+      B[wr][c]=t;
+      drops.set(t.id,-(wr+spawn)*step);
+      wr--;spawn++;
+    }
+  }
+  return drops;
+}
+
+async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
+  if(protectedKey)clearSet.delete(protectedKey);
+
+  let triggers=[];
+  if(!opts.suppressSpecialExpansion){
+    triggers=expandTriggeredSpecials(clearSet,protectedKey);
+    if(protectedKey)clearSet.delete(protectedKey);
+  }
+
+  if(opts.manualTriggers) triggers.push(...opts.manualTriggers);
+  if(triggers.length) await playTriggerFx(triggers);
+
+  render(null,clearSet);
+  await sleep(135);
+
+  for(const s of clearSet){
+    const [r,c]=parseK(s);
+    if(B[r]?.[c]){
+      B[r][c]=null;
+      score+=Math.round(BASE_SCORE*chainMultiplier());
+    }
+  }
+  render();
+  await sleep(35);
+
+  const drops=collapse();
+  render(drops);
+  await sleep(250);
+}
+
+async function resolveOneMatch(match,preferred=null,moveDir=null){
+  if(match.cells.size===0)return false;
+
+  const spawn=chooseSpecial(match,preferred,moveDir);
+  const clearSet=new Set(match.cells);
+  if(spawn?.shapeCells){
+    for(const p of spawn.shapeCells) clearSet.add(K(p.r,p.c));
+  }
+  let protectedKey=null;
+
+  if(spawn){
+    protectedKey=K(spawn.pos.r,spawn.pos.c);
+    const current=B[spawn.pos.r][spawn.pos.c];
+    // Create it BEFORE collapse so it survives, then falls naturally if needed.
+    B[spawn.pos.r][spawn.pos.c]=make(null,spawn.special);
+    clearSet.delete(protectedKey);
+  }
+
+  await clearCollapseOnly(clearSet,protectedKey);
+  return true;
+}
+
+async function cascade(){
+  for(let i=0;i<30;i++){
+    const m=scanMatches();
+    if(m.cells.size===0)return;
+    chainLevel++;
+    updateChain();
+    await resolveOneMatch(m,null);
+  }
+  // Safety valve: never freeze indefinitely if a pathological refill loops.
+  setMsg("連鎖が長いため一度停止しました");
+}
+
+
+function randomPositions(count){
+  const all=[];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)all.push({r,c});
+  for(let i=all.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [all[i],all[j]]=[all[j],all[i]];
+  }
+  return all.slice(0,Math.min(count,all.length));
+}
+
+async function specialCombo(a,b,oldA,oldB){
+  const center=b;
+
+  if(oldA.special==="flower" && oldB.special==="flower"){
+    setMsg("花＋花：盤面全消し！");
+    const targets=[];
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)targets.push({r,c});
+    clearFx(); flowerFx(center,targets); await sleep(360); clearFx();
+    await clearCollapseOnly(allBoard(),null,{suppressSpecialExpansion:true});
+    await cascade();
+    return true;
+  }
+
+  if(oldA.special==="flower" || oldB.special==="flower"){
+    const flowerWasA=oldA.special==="flower";
+    const flowerPos=flowerWasA?b:a;   // 交換後の花
+    const otherPos=flowerWasA?a:b;    // 交換後の相手
+    const other=flowerWasA?oldB:oldA;
+
+    // 花＋通常ブロック：入れ替えた通常ブロックの色を全消し
+    if(!other.special){
+      const targetColor=other.color;
+      const targets=[];
+      const clearSet=new Set([K(flowerPos.r,flowerPos.c),K(otherPos.r,otherPos.c)]);
+      for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+        if(!B[r][c]?.special && B[r][c]?.color===targetColor){
+          targets.push({r,c});
+          clearSet.add(K(r,c));
+        }
+      }
+      clearFx(); flowerFx(flowerPos,targets); await sleep(360); clearFx();
+      setMsg("花：入れ替えた色を全消し！");
+      await clearCollapseOnly(clearSet,null,{suppressSpecialExpansion:false});
+      await cascade();
+      return true;
+    }
+
+    // 花＋特殊：色は参照せず、同じ特殊効果をランダム6か所で発動
+    const centers=randomPositions(6);
+    const clearSet=new Set([K(flowerPos.r,flowerPos.c),K(otherPos.r,otherPos.c)]);
+
+    if(isLine(other.special)){
+      setMsg("花＋列消し：ランダム6本発動！");
+      const fx=centers.map(p=>({r:p.r,c:p.c,special:other.special}));
+      for(const p of centers)addAll(clearSet,effectAt(p.r,p.c,other.special));
+      await playTriggerFx(fx);
+    }else if(other.special==="bomb"){
+      setMsg("花＋爆弾：ランダム6か所発動！");
+      const fx=centers.map(p=>({r:p.r,c:p.c,special:"bomb"}));
+      for(const p of centers)addAll(clearSet,bombSet(p.r,p.c,2));
+      await playTriggerFx(fx);
+    }
+
+    await clearCollapseOnly(clearSet,null,{suppressSpecialExpansion:true});
+    await cascade();
+    return true;
+  }
+
+  if(isLine(oldA.special)&&isLine(oldB.special)){
+    setMsg("列＋列：十字消し！");
+    clearFx(); lineFx(center.r,center.c,"lineH"); lineFx(center.r,center.c,"lineV");
+    await sleep(340); clearFx();
+    await clearCollapseOnly(crossSet(center.r,center.c,0),null,{suppressSpecialExpansion:true});
+    await cascade(); return true;
+  }
+  if(oldA.special==="bomb"&&oldB.special==="bomb"){
+    setMsg("爆弾＋爆弾：ひし形範囲爆発！");
+    clearFx(); bombFx(center.r,center.c,1.8); await sleep(380); clearFx();
+    await clearCollapseOnly(bombBombSet(center.r,center.c),null,{suppressSpecialExpansion:true});
+    await cascade(); return true;
+  }
+  if((oldA.special==="bomb"&&isLine(oldB.special))||(oldB.special==="bomb"&&isLine(oldA.special))){
+    setMsg("列＋爆弾：太い十字！");
+    clearFx();
+    // 3行＋3列を視覚化
+    for(let d=-1;d<=1;d++){
+      if(inside(center.r+d,center.c)) lineFx(center.r+d,center.c,"lineH");
+      if(inside(center.r,center.c+d)) lineFx(center.r,center.c+d,"lineV");
+    }
+    await sleep(360); clearFx();
+    await clearCollapseOnly(crossSet(center.r,center.c,1),null,{suppressSpecialExpansion:true});
+    await cascade(); return true;
+  }
+  return false;
+}
+
+async function trySwap(a,b){
+  if(lock||!gameRunning)return;
+  chainLevel=1; updateChain();
+  lock=true;
+  try{
+    const oldA=B[a.r][a.c], oldB=B[b.r][b.c];
+    swap(a,b); render(); await sleep(90);
+
+    // 特殊＋特殊、花＋何か
+    if(oldA?.special && oldB?.special){
+      if(await specialCombo(a,b,oldA,oldB)){setMsg("隣のブロックへスワイプ");return}
+    }
+    if(oldA?.special==="flower" || oldB?.special==="flower"){
+      if(await specialCombo(a,b,oldA,oldB)){setMsg("隣のブロックへスワイプ");return}
+    }
+
+    // 単独の列消し／爆弾は、同色マッチを作らなくても交換しただけで発動
+    const aIsActive=oldA?.special && oldA.special!=="flower";
+    const bIsActive=oldB?.special && oldB.special!=="flower";
+    if(aIsActive !== bIsActive){
+      const specialTile=aIsActive?oldA:oldB;
+      const pos=aIsActive?b:a;              // 交換後の特殊ブロック位置
+      const movedNormalPos=aIsActive?a:b;   // 特殊と入れ替わって動いた通常ブロックの位置
+      const clearSet=effectAt(pos.r,pos.c,specialTile.special);
+      clearSet.add(K(pos.r,pos.c));
+
+      let protectedKey=null;
+
+      // 爆弾を発動するために動かした通常ブロックが、その移動によって
+      // 新しい特殊ブロック（2x2爆弾 / 4直列の列消し / 5直列の花）を作った場合、
+      // その新特殊は「今まさに発動している1つ目の爆風」では消さない。
+      if(specialTile.special==="bomb"){
+        const madeMatch=scanMatches();
+        const triggerMoveDir = (a.r===b.r) ? "H" : "V";
+        const madeSpecial=chooseSpecial(madeMatch,movedNormalPos,triggerMoveDir);
+
+        if(madeSpecial && madeSpecial.pos.r===movedNormalPos.r && madeSpecial.pos.c===movedNormalPos.c){
+          protectedKey=K(movedNormalPos.r,movedNormalPos.c);
+          B[movedNormalPos.r][movedNormalPos.c]=make(null,madeSpecial.special);
+          clearSet.delete(protectedKey);
+
+          // 新特殊を作ったマッチの残りは通常どおり消す。
+          for(const k of madeMatch.cells){
+            if(k!==protectedKey) clearSet.add(k);
+          }
+
+          const name =
+            madeSpecial.special==="bomb" ? "爆弾" :
+            (madeSpecial.special==="lineH" || madeSpecial.special==="lineV") ? "列消し" :
+            madeSpecial.special==="flower" ? "花" : "特殊";
+          setMsg(`爆弾発動！＋ 新しい${name}生成！`);
+        }else{
+          setMsg("爆弾発動！");
+        }
+      }else{
+        setMsg("列消し発動！");
+      }
+
+      await clearCollapseOnly(clearSet,protectedKey);
+      await cascade();
+      setMsg("隣のブロックへスワイプ");
+      return;
+    }
+
+    const m=scanMatches();
+    if(m.cells.size===0){
+      swap(a,b); render(); setMsg("消えないので元に戻ります");
+      await sleep(130); setMsg("隣のブロックへスワイプ");
+      return;
+    }
+
+    const moveDir = (a.r===b.r) ? "H" : "V";
+    await resolveOneMatch(m,b,moveDir);
+    await cascade();
+    setMsg("隣のブロックへスワイプ");
+  }catch(err){
+    console.error(err);
+    setMsg("エラーを検出しました。やり直しで復帰できます");
+  }finally{
+    lock=false;
+    clearFx();
+    if(pendingFinish) finishGame();
+  }
+}
+
+document.getElementById("reset").addEventListener("click",()=>{
+  if(!lock) startGame(selectedMinutes);
+});
+newBoard();
+gameRunning=false;
+updateTimer();
+updateChain();
+</script>
+</body>
+</html>
