@@ -367,6 +367,43 @@ body{
   text-align:center;
 }
 
+
+.testerEntry{margin-top:8px;text-align:center;}
+.testerBtn{
+  appearance:none;border:1px solid rgba(255,255,255,.18);border-radius:11px;
+  background:rgba(42,48,61,.90);color:#dce6f3;font-size:11px;font-weight:800;
+  padding:7px 11px;
+}
+.testerForm{
+  display:none;
+  margin:10px auto 0;
+  width:min(300px,90%);
+  padding:10px;
+  border-radius:14px;
+  background:rgba(16,27,43,.92);
+  border:1px solid rgba(255,255,255,.12);
+}
+.testerForm.show{display:block;}
+.testerLabel{font-size:11px;color:#cbd7e6;margin-bottom:6px;font-weight:800;}
+.testerInput{
+  width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.15);
+  border-radius:10px;background:#0f1724;color:#fff;padding:9px 10px;
+  text-align:center;font-size:16px;letter-spacing:.18em;
+}
+.testerActions{display:flex;gap:7px;margin-top:8px;}
+.testerActions button{
+  flex:1;border:0;border-radius:9px;padding:8px 9px;font-size:11px;font-weight:800;
+}
+#testerStartBtn{background:#ff78ba;color:#fff;}
+#testerCancelBtn{background:#3c4656;color:#fff;}
+.testerError{min-height:16px;margin-top:5px;font-size:10px;color:#ff8c9f;}
+.testerBadge{
+  display:none;
+  margin:0 0 6px;
+  font-size:11px;font-weight:900;color:#ff9bd0;
+}
+.testerBadge.show{display:block;}
+
 </style>
 </head>
 <body>
@@ -404,6 +441,18 @@ body{
       <button id="rulesLinkBtn" class="infoLinkBtn" type="button">遊び方・ルール</button>
       <button id="historyLinkBtn" class="infoLinkBtn" type="button">更新履歴</button>
     </div>
+    <div class="testerEntry">
+      <button id="testerBtn" class="testerBtn" type="button">テスター用</button>
+      <div id="testerForm" class="testerForm">
+        <div class="testerLabel">テスター用パスワード</div>
+        <input id="testerPassword" class="testerInput" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••">
+        <div class="testerActions">
+          <button id="testerStartBtn" type="button">開始</button>
+          <button id="testerCancelBtn" type="button">戻る</button>
+        </div>
+        <div id="testerError" class="testerError"></div>
+      </div>
+    </div>
     <div class="note">
       本作は練習目的の非公式ファンメイド作品です。<br>
       各サービス・運営会社とは関係ありません。
@@ -415,6 +464,7 @@ body{
 </div>
 <div class="app">
   <div style="font-size:12px;color:#91a0b2;font-weight:700;margin-bottom:4px">仲間六夜 feat. ChatGPT</div>
+  <div id="testerBadge" class="testerBadge">TESTER MODE / TIME ∞</div>
   <h1>Match-3 練習用</h1>
   <div class="top">
     <div class="score">SCORE <span id="score">0</span></div>
@@ -429,7 +479,7 @@ body{
     <div id="board" class="board"></div>
     <div id="fx" class="fx"></div>
   </div>
-  <div class="currentVersionMini">v2.15</div>
+  <div class="currentVersionMini">v2.20</div>
 </div>
 
 
@@ -446,11 +496,11 @@ body{
     </div>
     <div class="ruleSection">
       <h3>特殊ブロック</h3>
-      <p>4個直列で矢印（↔ / ↕）、同色2×2またはL字・T字の5個つながりで爆弾（💣）、5個直列で花（🌸）を生成。特殊ブロックは無色で通常の色マッチには参加しません。</p>
+      <p>4個直列で矢印（↔ / ↕）、同色2×2またはL字・T字・十字の5個以上のつながりで爆弾（💣）、5個直列で花（🌸）を生成。特殊ブロックは無色で通常の色マッチには参加しません。</p>
     </div>
     <div class="ruleSection">
       <h3>特殊効果</h3>
-      <p>単体爆弾は中心から5×5のひし形範囲。列＋列は十字、爆弾＋爆弾は7×7ひし形、列＋爆弾は太い十字。花＋通常色はその色を全消し。花＋矢印は縦横ランダム混在で6本、花＋爆弾はランダム8か所、花＋花は盤面全消しです。</p>
+      <p>単体爆弾は中心から5×5のひし形範囲。列＋列は十字、爆弾＋爆弾は7×7ひし形、列＋爆弾は太い十字。花＋通常色はその色を全消し。花＋矢印は縦横ランダム混在で6本、花＋爆弾はランダム8か所、花＋花は盤面全消しです。爆弾・矢印・花が別の特殊効果に巻き込まれた場合も発動し、巻き込まれた花は盤面にある色からランダム1色を選んで全消しします。</p>
     </div>
     <div class="ruleSection">
       <h3>連鎖とスコア</h3>
@@ -464,6 +514,10 @@ body{
       <h3>妨害モード</h3>
       <p>タイトル画面でON/OFFを切替。氷トリガー、2段階の氷、色消去ミッション、1段階の鎖を使った擬似妨害が入ります。氷・鎖が付いたブロックは動かせず、消去や色つながりの判定にも参加しません。</p>
     </div>
+    <div class="ruleSection">
+      <h3>テスター用</h3>
+      <p>タイトル画面の「テスター用」から専用パスワードを入力すると、制限時間なしのテスト盤面を開始できます。特殊ブロック同士を合わせた時の動作確認用に、花＋花、花＋爆弾、花＋矢印、爆弾＋爆弾、爆弾＋矢印、矢印＋矢印の6組を固定配置しています。左右順や矢印方向の重複は省いています。「やり直し」で固定配置へ戻せます。</p>
+    </div>
   </div>
 </div>
 
@@ -474,6 +528,11 @@ body{
       <button class="infoClose" data-close-info type="button">戻る</button>
     </div>
 
+    <div class="historyItem"><h3><span class="historyVersion">v2.20</span>テスター配置整理</h3><p>特殊ブロック同士を合わせた時の動作確認に絞り、左右順や矢印方向の重複を削除。花＋花、花＋爆弾、花＋矢印、爆弾＋爆弾、爆弾＋矢印、矢印＋矢印の6組に整理。</p></div>
+    <div class="historyItem"><h3><span class="historyVersion">v2.19</span>タイトル復帰修正</h3><p>ゲーム中の「タイトルへ」ボタンが反応しない不具合を修正。通常モード・テスターモードのどちらからでもタイトル画面へ戻れるようにしました。</p></div>
+    <div class="historyItem"><h3><span class="historyVersion">v2.18</span>テスターモード</h3><p>ゲーム内にパスワード式のテスター用モードを追加。9×7盤面・時間無制限で、花・爆弾・縦横矢印の特殊ブロック全組み合わせを固定配置からすぐ確認可能。</p></div>
+    <div class="historyItem"><h3><span class="historyVersion">v2.17</span>花の巻き込み発動</h3><p>特殊効果に巻き込まれた花が、盤面にある通常色からランダム1色を選び、伝播演出つきでその色を全消しするよう変更。爆弾・矢印の巻き込み発動も継続。</p></div>
+    <div class="historyItem"><h3><span class="historyVersion">v2.16</span>十字爆弾対応</h3><p>横3個以上と縦3個以上が交差する十字形でも爆弾を生成。連鎖中に成立したL字・T字・十字も検出するよう判定を強化。</p></div>
     <div class="historyItem"><h3><span class="historyVersion">v2.15</span>ゲーム内情報ページ</h3><p>トップ画面から「遊び方・ルール」「更新履歴」を開けるように変更。長いルール説明をゲーム画面から移動。</p></div>
     <div class="historyItem"><h3><span class="historyVersion">v2.14</span>音量・操作UI調整</h3><p>BGMを少し大きく、SEを全体的に控えめに調整。ゲーム中に「タイトルへ」ボタンを追加。</p></div>
     <div class="historyItem"><h3><span class="historyVersion">v2.13</span>音声実装</h3><p>BGM、連鎖1〜4段階SE、決定・MOVE・CANCEL、爆弾・花・矢印の各SEを実装。</p></div>
@@ -582,7 +641,7 @@ const ROWS=7, COLS=9, COLORS=5;
 const BASE_SCORE=100;
 let B=[], score=0, selected=null, lock=false, pointerStart=null, nextId=1;
 let selectedMinutes=3, remainingSeconds=180, timerId=null;
-let gameRunning=false, pendingFinish=false, chainLevel=1;
+let gameRunning=false, pendingFinish=false, chainLevel=1, testerMode=false;
 let hintEnabled=true, interferenceEnabled=false, hintPair=null, hintBusy=false;
 let lastActivity=Date.now(), idleWatchId=null;
 let mission=null, pendingIceAttacks=0, pendingChainAttacks=0;
@@ -651,7 +710,13 @@ function formatTime(sec){
   return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`;
 }
 function updateTimer(){
-  timerEl.textContent=formatTime(remainingSeconds);
+  if(testerMode){
+    timerEl.textContent="∞";
+    return;
+  }
+  const m=Math.max(0,Math.floor(remainingSeconds/60));
+  const s=Math.max(0,remainingSeconds%60);
+  timerEl.textContent=`${m}:${String(s).padStart(2,"0")}`;
 }
 function stopTimer(){
   if(timerId){clearInterval(timerId);timerId=null;}
@@ -670,6 +735,9 @@ function finishGame(){
   resultScreen.classList.add("show");
 }
 function startGame(minutes=selectedMinutes){
+  testerMode=false;
+  const testerBadge=document.getElementById("testerBadge");
+  testerBadge?.classList.remove("show");
   selectedMinutes=minutes;
   startBgm(true);
   remainingSeconds=minutes*60;
@@ -700,6 +768,31 @@ function startGame(minutes=selectedMinutes){
   },1000);
 }
 
+function startTesterGame(){
+  testerMode=true;
+  stopTimer();
+  stopIdleWatch();
+  startBgm(true);
+  remainingSeconds=0;
+  score=0;
+  chainLevel=1;
+  pendingFinish=false;
+  gameRunning=true;
+  lock=false;
+  resultScreen.classList.remove("show");
+  titleScreen.classList.add("hidden");
+  document.getElementById("testerBadge")?.classList.add("show");
+  mission=null;
+  updateMissionUI();
+  generateTesterBoard();
+  selected=null;
+  hintPair=null;
+  updateTimer();
+  updateChain();
+  setMsg("テスター用：隣り合う特殊ブロックを入れ替えてテスト");
+  render();
+}
+
 document.querySelectorAll(".durationBtn").forEach(btn=>{
   btn.addEventListener("click",()=>{
     playDecision();
@@ -716,7 +809,9 @@ startBtn.addEventListener("click",()=>{playDecision();startGame(selectedMinutes)
 retryBtn.addEventListener("click",()=>{playDecision();startGame(selectedMinutes);});
 titleBtn.addEventListener("click",()=>{
   playDecision(); stopBgm();
-  stopTimer(); stopIdleWatch(); gameRunning=false; pendingFinish=false;
+  stopTimer(); stopIdleWatch(); testerMode=false;
+  document.getElementById("testerBadge")?.classList.remove("show");
+  gameRunning=false; pendingFinish=false;
   resultScreen.classList.remove("show");
   titleScreen.classList.remove("hidden");
 });
@@ -751,6 +846,38 @@ function generateCleanBoard(){
     B[r][c]=make(color);
   }
 }
+
+function generateTesterBoard(){
+  // First build a deterministic no-match normal board.
+  B=Array.from({length:ROWS},(_,r)=>
+    Array.from({length:COLS},(_,c)=>make((r*2+c*3)%COLORS))
+  );
+
+  // テスターでは「合わせた時の動作」だけを見るため、
+  // 左右順や矢印方向の重複は置かず、効果カテゴリごとに1組だけ配置。
+  // Row 0: 花+花 / 花+爆弾 / 花+矢印
+  B[0][0]=make(null,"flower"); B[0][1]=make(null,"flower");
+  B[0][3]=make(null,"flower"); B[0][4]=make(null,"bomb");
+  B[0][6]=make(null,"flower"); B[0][7]=make(null,"lineH");
+
+  // Row 3: 爆弾+爆弾 / 爆弾+矢印 / 矢印+矢印
+  B[3][0]=make(null,"bomb");   B[3][1]=make(null,"bomb");
+  B[3][3]=make(null,"bomb");   B[3][4]=make(null,"lineH");
+  B[3][6]=make(null,"lineH");  B[3][7]=make(null,"lineV");
+}
+
+function resetTesterBoard(){
+  generateTesterBoard();
+  score=0;
+  selected=null;
+  lock=false;
+  chainLevel=1;
+  hintPair=null;
+  updateChain();
+  setMsg("テスター用：隣り合う特殊ブロックを入れ替えてテスト");
+  render();
+}
+
 function newBoard(resetScore=true){
   for(let tries=0;tries<200;tries++){
     generateCleanBoard();
@@ -946,6 +1073,39 @@ function squareContaining(pos){
 }
 
 
+
+function matchedBentShape(match,preferred=null){
+  const hs=match.groups.filter(g=>g.dir==="H");
+  const vs=match.groups.filter(g=>g.dir==="V");
+  const candidates=[];
+
+  for(const h of hs){
+    for(const v of vs){
+      if(h.color!==v.color)continue;
+
+      // H/V の実際のマッチが交差していること。
+      const cross=h.cells.find(a=>v.cells.some(b=>a.r===b.r&&a.c===b.c));
+      if(!cross)continue;
+
+      const map=new Map();
+      for(const p of [...h.cells,...v.cells])map.set(K(p.r,p.c),{r:p.r,c:p.c});
+      const cells=[...map.values()];
+      if(cells.length<5)continue;
+
+      candidates.push({cells,color:h.color,cross});
+    }
+  }
+
+  if(!candidates.length)return null;
+
+  // 操作したブロックを含む形を優先。なければ最初の成立形。
+  if(preferred){
+    const hit=candidates.find(x=>x.cells.some(p=>p.r===preferred.r&&p.c===preferred.c));
+    if(hit)return hit;
+  }
+  return candidates[0];
+}
+
 function fiveShapeContaining(pos){
   if(!pos)return null;
   const t0=B[pos.r]?.[pos.c];
@@ -994,10 +1154,14 @@ function chooseSpecial(match,preferred=null,moveDir=null){
     return {pos,special:"flower",color:g.color};
   }
 
-  // L字/T字など、直線ではない5個以上のつながり
-  const shaped=fiveShapeContaining(preferred);
+  // L字 / T字 / 十字：横3+と縦3+が交差してできた5個以上の形
+  // preferred がない連鎖中でも検出する。
+  const shaped=matchedBentShape(match,preferred) || fiveShapeContaining(preferred);
   if(shaped){
-    return {pos:preferred,special:"bomb",color:shaped.color,shapeCells:shaped.cells};
+    const pos = preferred && shaped.cells.some(p=>p.r===preferred.r&&p.c===preferred.c)
+      ? preferred
+      : (shaped.cross || shaped.cells[Math.floor(shaped.cells.length/2)]);
+    return {pos,special:"bomb",color:shaped.color,shapeCells:shaped.cells};
   }
 
   // 2x2
@@ -1018,15 +1182,48 @@ function chooseSpecial(match,preferred=null,moveDir=null){
   return null;
 }
 
-function expandTriggeredSpecials(clearSet,protectedKey=null){
-  const fired=new Set(), triggers=[];
+function randomPresentColor(){
+  const present=new Set();
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const t=B[r][c];
+    if(isMatchableNormal(t))present.add(t.color);
+  }
+  const colors=[...present];
+  return colors.length ? colors[Math.floor(Math.random()*colors.length)] : Math.floor(Math.random()*COLORS);
+}
+
+function expandTriggeredSpecials(clearSet,protectedKey=null,skipFlowerKeys=null){
+  const fired=new Set(), triggers=[], flowers=[];
+  const skipFlowers=skipFlowerKeys||new Set();
   let changed=true;
+
   while(changed){
     changed=false;
     for(const s of [...clearSet]){
       if(s===protectedKey || fired.has(s))continue;
-      const [r,c]=parseK(s),t=B[r][c];
-      if(!t?.special || t.special==="flower" || isBlocked(t) || isTrigger(t))continue;
+      const [r,c]=parseK(s),t=B[r]?.[c];
+      if(!t?.special || isBlocked(t) || isTrigger(t))continue;
+
+      if(t.special==="flower"){
+        if(skipFlowers.has(s))continue;
+        fired.add(s);
+
+        // 花が別の特殊効果に巻き込まれた時：
+        // 盤面に存在する通常色から1色をランダムに選び、その色を花処理する。
+        const targetColor=randomPresentColor();
+        const targets=[];
+        for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++){
+          const q=B[rr][cc];
+          if(isMatchableNormal(q) && q.color===targetColor){
+            const k=K(rr,cc);
+            targets.push({r:rr,c:cc});
+            if(!clearSet.has(k)){clearSet.add(k);changed=true;}
+          }
+        }
+        flowers.push({r,c,targetColor,targets});
+        continue;
+      }
+
       fired.add(s);
       triggers.push({r,c,special:t.special});
       for(const x of effectAt(r,c,t.special)){
@@ -1034,7 +1231,7 @@ function expandTriggeredSpecials(clearSet,protectedKey=null){
       }
     }
   }
-  return triggers;
+  return {triggers,flowers};
 }
 
 
@@ -1196,13 +1393,25 @@ function progressMissionForTile(t){
 async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
   if(protectedKey)clearSet.delete(protectedKey);
 
-  let triggers=[];
+  let triggers=[], flowerTriggers=[];
   if(!opts.suppressSpecialExpansion){
-    triggers=expandTriggeredSpecials(clearSet,protectedKey);
+    const expanded=expandTriggeredSpecials(clearSet,protectedKey,opts.skipFlowerKeys);
+    triggers=expanded.triggers;
+    flowerTriggers=expanded.flowers;
     if(protectedKey)clearSet.delete(protectedKey);
   }
   if(opts.manualTriggers) triggers.push(...opts.manualTriggers);
+
+  // 爆弾・矢印の巻き込み発動
   if(triggers.length) await playTriggerFx(triggers);
+
+  // 花の巻き込み発動：ランダム1色へ伝播線を伸ばしてから、その色を全消し。
+  for(const f of flowerTriggers){
+    if(!f.targets.length)continue;
+    playFlower();
+    setMsg(`花が巻き込まれた！ ${COLOR_NAMES[f.targetColor]}を全消し！`);
+    await playFlowerPropagation({r:f.r,c:f.c},f.targets,{stagger:true});
+  }
 
   // 氷・鎖・氷トリガーは直接消えない。まず実際に消えるセルだけを確定する。
   const actual=new Set();
@@ -1338,7 +1547,7 @@ async function specialCombo(a,b,oldA,oldB){
       playFlower();
       await playFlowerPropagation(flowerPos,targets,{stagger:true});
       setMsg("花：入れ替えた色を全消し！");
-      await clearCollapseOnly(clearSet,null,{suppressSpecialExpansion:false});
+      await clearCollapseOnly(clearSet,null,{suppressSpecialExpansion:false,skipFlowerKeys:new Set([K(flowerPos.r,flowerPos.c)])});
       await cascade();
       return true;
     }
@@ -1569,6 +1778,45 @@ async function trySwap(a,b){
 
 
 
+
+const testerBtn=document.getElementById("testerBtn");
+const testerForm=document.getElementById("testerForm");
+const testerPassword=document.getElementById("testerPassword");
+const testerStartBtn=document.getElementById("testerStartBtn");
+const testerCancelBtn=document.getElementById("testerCancelBtn");
+const testerError=document.getElementById("testerError");
+
+testerBtn?.addEventListener("click",()=>{
+  playDecision();
+  testerForm?.classList.add("show");
+  testerError.textContent="";
+  testerPassword.value="";
+  setTimeout(()=>testerPassword?.focus(),50);
+});
+testerCancelBtn?.addEventListener("click",()=>{
+  playDecision();
+  testerForm?.classList.remove("show");
+  testerError.textContent="";
+  testerPassword.value="";
+});
+function tryStartTester(){
+  if((testerPassword?.value||"")==="1127"){
+    playDecision();
+    testerForm?.classList.remove("show");
+    testerError.textContent="";
+    testerPassword.value="";
+    startTesterGame();
+  }else{
+    playCancel();
+    testerError.textContent="パスワードが違います";
+    testerPassword?.select();
+  }
+}
+testerStartBtn?.addEventListener("click",tryStartTester);
+testerPassword?.addEventListener("keydown",e=>{
+  if(e.key==="Enter")tryStartTester();
+});
+
 const rulesLinkBtn=document.getElementById("rulesLinkBtn");
 const historyLinkBtn=document.getElementById("historyLinkBtn");
 const rulesOverlay=document.getElementById("rulesOverlay");
@@ -1603,16 +1851,24 @@ gameTitleBtn?.addEventListener("click",()=>{
   playDecision();
   stopBgm();
   stopTimer();
+  stopIdleWatch();
+  testerMode=false;
+  document.getElementById("testerBadge")?.classList.remove("show");
   gameRunning=false;
   pendingFinish=false;
+  selected=null;
+  hintPair=null;
   resultScreen.classList.remove("show");
-  gameScreen.classList.remove("show");
-  titleScreen.classList.add("show");
+  titleScreen.classList.remove("hidden");
   setMsg("隣のブロックへスワイプ");
 });
 
 document.getElementById("reset").addEventListener("click",()=>{
-  if(!lock){playDecision();markActivity();startGame(selectedMinutes);}
+  if(lock)return;
+  playDecision();
+  markActivity();
+  if(testerMode) resetTesterBoard();
+  else startGame(selectedMinutes);
 });
 newBoard();
 gameRunning=false;
