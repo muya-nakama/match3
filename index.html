@@ -629,6 +629,69 @@ body{
  background:rgba(25,34,45,.94)!important;
 }
 
+
+/* ===== v2.38 Shared Ranking ===== */
+.rankingMenuBtn{width:100%;margin-top:8px;padding:11px 10px;border-radius:11px;background:#2d3d53;color:#fff;font-size:13px;font-weight:900}
+.rankingOverlay{position:fixed;inset:0;z-index:14000;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(5,10,20,.78);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.rankingOverlay.show{display:flex}
+.rankingPanel{width:min(94vw,500px);max-height:90vh;overflow:auto;border-radius:20px;padding:16px 14px 18px;background:rgba(16,27,43,.985);border:1px solid rgba(255,255,255,.16);box-shadow:0 14px 44px rgba(0,0,0,.42)}
+.rankingHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.rankingTitle{font-size:19px;font-weight:900}.rankingClose{background:#39465a;color:#fff;padding:7px 11px}
+.rankingDurationGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0 12px}
+.rankingDurationBtn{padding:8px 3px;border-radius:9px;background:#273343;color:#dfe9f4;font-size:11px;border:1px solid rgba(255,255,255,.1)}
+.rankingDurationBtn.selected{background:#f2f5f8;color:#16202a;outline:2px solid #7cc7ff}
+.rankingStatus{min-height:22px;text-align:center;color:#9fb0c3;font-size:12px;margin:4px 0 7px}
+.rankingTable{width:100%;border-collapse:collapse;font-size:12px}
+.rankingTable th,.rankingTable td{padding:8px 5px;border-bottom:1px solid rgba(255,255,255,.075)}
+.rankingTable th{color:#9fb0c3;font-size:10px;text-align:left}
+.rankingTable td:nth-child(1),.rankingTable th:nth-child(1){width:42px;text-align:center}
+.rankingTable td:nth-child(3),.rankingTable th:nth-child(3){text-align:right}
+.rankingRank{font-weight:1000;color:#ffe98c}.rankingEmpty{text-align:center!important;color:#8292a5;padding:18px 6px!important}
+.resultRankingBox{margin:12px 0 4px;padding:11px;border-radius:14px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09)}
+.resultRankingTitle{font-size:12px;font-weight:900;color:#c9d6e5;margin-bottom:7px}
+.resultRankRow{display:flex;gap:7px}
+.resultRankName{min-width:0;flex:1;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:#0f1724;color:#fff;padding:9px}
+.resultRankSubmit{background:#ff78ba;color:#fff;padding:9px 11px}
+.resultRankStatus{min-height:18px;margin-top:6px;font-size:11px;color:#a8b7c9}
+
+
+/* ===== v2.40 Player Name ===== */
+.playerNameBox{
+ margin:12px 0 4px;
+ padding:10px;
+ border-radius:14px;
+ background:rgba(255,255,255,.055);
+ border:1px solid rgba(255,255,255,.09);
+}
+.playerNameLabel{
+ font-size:11px;
+ font-weight:900;
+ color:#aebed0;
+ margin-bottom:6px;
+}
+.playerNameRow{display:flex;gap:7px}
+.playerNameInput{
+ min-width:0;flex:1;
+ border:1px solid rgba(255,255,255,.15);
+ border-radius:10px;
+ background:#0f1724;
+ color:#fff;
+ padding:9px 10px;
+ font-size:13px;
+}
+.playerNameSave{
+ background:#39465a;
+ color:#fff;
+ padding:9px 11px;
+ font-size:12px;
+}
+.playerNameStatus{
+ min-height:16px;
+ margin-top:5px;
+ color:#8fa2b8;
+ font-size:10px;
+}
+
 </style>
 
 <link rel="manifest" href="./manifest.webmanifest">
@@ -653,7 +716,16 @@ body{
    ステージ制なし・広告なし・ブラウザでそのまま遊べます。
   </div>
   <div class="fanmade">非公式・ファンメイド</div>
-  <div class="titleVersion">VERSION v2.37</div>
+  <div class="titleVersion">VERSION v2.40</div>
+
+  <div class="playerNameBox">
+   <div class="playerNameLabel">プレイヤーネーム</div>
+   <div class="playerNameRow">
+    <input id="playerNameInput" class="playerNameInput" maxlength="16" autocomplete="nickname" placeholder="名前を入力">
+    <button id="playerNameSave" class="playerNameSave" type="button">保存</button>
+   </div>
+   <div id="playerNameStatus" class="playerNameStatus"></div>
+  </div>
   <div class="durationLabel">制限時間を選択</div>
   <div id="durationGrid" class="durationGrid">
    <button class="durationBtn" data-min="1">1分</button>
@@ -674,6 +746,7 @@ body{
   <button id="startBtn" class="startBtn">3分でゲームをはじめる</button>
   <div class="infoLinks">
    <button id="tutorialLinkBtn" class="infoLinkBtn" type="button">チュートリアル</button>
+   <button id="rankingTitleBtn" class="infoLinkBtn" type="button">ランキング</button>
    <button id="rulesLinkBtn" class="infoLinkBtn" type="button">遊び方・ルール</button>
    <button id="historyLinkBtn" class="infoLinkBtn" type="button">更新履歴</button>
   </div>
@@ -706,7 +779,7 @@ body{
   <div id="board" class="board"></div>
   <div id="fx" class="fx"></div>
  </div>
- <div class="currentVersionMini">v2.37</div>
+ <div class="currentVersionMini">v2.40</div>
 </div>
 
 
@@ -727,7 +800,6 @@ body{
    </div>
    <div class="menuHint">タップするたびに 3 → 2 → 1 → ミュート → 3 と切り替わります。</div>
   </div>
-
   <div id="freePlayMenu" class="menuSection freePlayOnly">
    <div class="menuSectionTitle">フリープレイ限定：特殊ブロック召喚</div>
    <div class="summonGrid">
@@ -743,10 +815,18 @@ body{
    <div id="summonHint" class="menuHint">種類を選んで閉じたあと、置きたいマスをタップしてください。2個セットは横並びで配置します。</div>
   </div>
 
-  <div class="menuVersion">VERSION v2.37</div>
+  <div class="menuVersion">VERSION v2.40</div>
  </div>
 </div>
 
+<div id="rankingOverlay" class="rankingOverlay" aria-hidden="true">
+ <div class="rankingPanel">
+  <div class="rankingHeader"><div class="rankingTitle">ランキング TOP 20</div><button id="rankingCloseBtn" class="rankingClose">閉じる</button></div>
+  <div class="rankingDurationGrid"><button class="rankingDurationBtn" data-rank-min="1">1分</button><button class="rankingDurationBtn" data-rank-min="2">2分</button><button class="rankingDurationBtn selected" data-rank-min="3">3分</button><button class="rankingDurationBtn" data-rank-min="4">4分</button><button class="rankingDurationBtn" data-rank-min="5">5分</button><button class="rankingDurationBtn" data-rank-min="6">6分</button><button class="rankingDurationBtn" data-rank-min="7">7分</button><button class="rankingDurationBtn" data-rank-min="8">8分</button><button class="rankingDurationBtn" data-rank-min="9">9分</button><button class="rankingDurationBtn" data-rank-min="10">10分</button></div>
+  <div id="rankingStatus" class="rankingStatus">読み込み待ち</div>
+  <table class="rankingTable"><thead><tr><th>順位</th><th>名前</th><th>スコア</th></tr></thead><tbody id="rankingBody"></tbody></table>
+ </div>
+</div>
 <div id="tutorialOverlay" class="tutorialOverlay" aria-hidden="true">
  <div class="tutorialShell">
   <div class="tutorialTop">
@@ -818,7 +898,10 @@ body{
    <button class="infoClose" data-close-info type="button">戻る</button>
   </div>
 
-  <div class="historyItem"><h3><span class="historyVersion">v2.37</span>特殊ブロック同時生成修正</h3><p>1回の操作で複数の特殊生成条件が独立して成立した場合、それぞれの特殊ブロックを同時生成するよう修正しました。同じ成立形で条件が重なる場合は、花 ＞ 爆弾 ＞ 矢印の優先順位で1つに整理します。</p></div>
+  <div class="historyItem"><h3><span class="historyVersion">v2.40</span>プレイヤーネーム保存</h3><p>タイトル画面にプレイヤーネーム設定を追加。保存した名前は端末内に保持され、次回以降のランキング登録時にデフォルト名として自動入力されます。</p></div>
+    <div class="historyItem"><h3><span class="historyVersion">v2.39</span>ランキング導線変更</h3><p>ランキングをゲーム中メニューから外し、タイトル画面から直接確認できるように変更しました。</p></div>
+    <div class="historyItem"><h3><span class="historyVersion">v2.38</span>共有ランキング追加</h3><p>通常プレイ終了後に名前を入力してスコア登録できる共有ランキングを追加。ゲームメニューから1〜10分別のTOP20を確認できます。フリープレイはランキング対象外です。</p></div>
+    <div class="historyItem"><h3><span class="historyVersion">v2.37</span>特殊ブロック同時生成修正</h3><p>1回の操作で複数の特殊生成条件が独立して成立した場合、それぞれの特殊ブロックを同時生成するよう修正しました。同じ成立形で条件が重なる場合は、花 ＞ 爆弾 ＞ 矢印の優先順位で1つに整理します。</p></div>
     <div class="historyItem"><h3><span class="historyVersion">v2.36</span>チュートリアル修正</h3><p>フリープレイ整理時に欠落していたチュートリアル処理を復旧しました。8ステップの自動実演、一時停止・再開、終了、再生を再び利用できます。</p></div>
     <div class="historyItem"><h3><span class="historyVersion">v2.35</span>やり直しボタン撤去</h3><p>通常ゲーム・フリープレイともに「やり直し」ボタンを撤去し、ゲーム中の上部操作を「メニュー」と「タイトルへ」に整理しました。</p></div>
     <div class="historyItem"><h3><span class="historyVersion">v2.34</span>フリープレイ操作整理</h3><p>フリープレイ開始時のパスワード入力を撤去し、ボタン1タップで開始できるように変更。フリープレイ中は「やり直し」ボタンを非表示にしました。</p></div>
@@ -863,6 +946,11 @@ body{
  <div class="resultCard">
   <div id="resultTime" class="resultTime">3分 CHALLENGE</div>
   <div id="resultScore" class="resultScore">0</div>
+ <div id="resultRankingBox" class="resultRankingBox">
+  <div class="resultRankingTitle">ランキングに登録</div>
+  <div class="resultRankRow"><input id="resultRankName" class="resultRankName" maxlength="16" placeholder="名前（16文字まで）"><button id="resultRankSubmit" class="resultRankSubmit">登録</button></div>
+  <div id="resultRankStatus" class="resultRankStatus"></div>
+ </div>
   <div class="resultLabel">FINAL SCORE</div>
   <div class="resultBtns">
    <button id="retryBtn">もう一度</button>
@@ -934,6 +1022,10 @@ function stopBgm(){
  try{bgmAudio.pause();bgmAudio.currentTime=0;}catch(e){}
 }
 
+
+const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
+const GAME_VERSION="2.40";
+let rankingMinutes=3,rankingJsonpSeq=0;
 
 const titleScreen=document.getElementById("titleScreen");
 const startBtn=document.getElementById("startBtn");
@@ -1046,6 +1138,7 @@ function finishGame(){
  resultTimeEl.textContent=`${selectedMinutes}分 CHALLENGE`;
  resultScoreEl.textContent=score.toLocaleString("ja-JP");
  resultScreen.classList.add("show");
+ prepareResultRanking();
 }
 function startGame(minutes=selectedMinutes){
  summonMode=null;
@@ -1187,6 +1280,97 @@ document.querySelectorAll(".summonBtn").forEach(btn=>{
  });
 });
 syncAudioMenu();
+
+
+
+const playerNameInput=document.getElementById("playerNameInput");
+const playerNameSave=document.getElementById("playerNameSave");
+const playerNameStatus=document.getElementById("playerNameStatus");
+const PLAYER_NAME_KEY="match3_ranking_name";
+
+function getSavedPlayerName(){
+ return (localStorage.getItem(PLAYER_NAME_KEY)||"").trim().slice(0,16);
+}
+function setSavedPlayerName(name){
+ const clean=String(name||"").trim().slice(0,16);
+ if(clean)localStorage.setItem(PLAYER_NAME_KEY,clean);
+ else localStorage.removeItem(PLAYER_NAME_KEY);
+ return clean;
+}
+function syncPlayerNameUI(){
+ if(playerNameInput)playerNameInput.value=getSavedPlayerName();
+}
+function savePlayerNameFromTitle(){
+ const clean=setSavedPlayerName(playerNameInput?.value||"");
+ if(playerNameStatus){
+  playerNameStatus.textContent=clean?`「${clean}」で保存しました`:"プレイヤーネームを未設定にしました";
+ }
+ if(resultRankName)resultRankName.value=clean;
+}
+playerNameSave?.addEventListener("click",()=>{
+ playDecision();
+ savePlayerNameFromTitle();
+});
+playerNameInput?.addEventListener("keydown",e=>{
+ if(e.key==="Enter")savePlayerNameFromTitle();
+});
+syncPlayerNameUI();
+
+const rankingTitleBtn=document.getElementById("rankingTitleBtn");
+const rankingOverlay=document.getElementById("rankingOverlay");
+const rankingCloseBtn=document.getElementById("rankingCloseBtn");
+const rankingStatus=document.getElementById("rankingStatus");
+const rankingBody=document.getElementById("rankingBody");
+const resultRankingBox=document.getElementById("resultRankingBox");
+const resultRankName=document.getElementById("resultRankName");
+const resultRankSubmit=document.getElementById("resultRankSubmit");
+const resultRankStatus=document.getElementById("resultRankStatus");
+
+function escapeRank(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function loadRanking(minutes=rankingMinutes){
+ rankingMinutes=Number(minutes)||3;
+ document.querySelectorAll(".rankingDurationBtn").forEach(b=>b.classList.toggle("selected",Number(b.dataset.rankMin)===rankingMinutes));
+ rankingStatus.textContent="読み込み中...";rankingBody.innerHTML="";
+ const cb=`__match3Rank${Date.now()}_${++rankingJsonpSeq}`,s=document.createElement("script");
+ let finished=false;
+ const clean=()=>{if(finished)return;finished=true;try{delete window[cb]}catch(e){}s.remove()};
+ const timer=setTimeout(()=>{if(finished)return;rankingStatus.textContent="取得できませんでした";rankingBody.innerHTML='<tr><td colspan="3" class="rankingEmpty">通信を確認してください</td></tr>';clean()},7000);
+ window[cb]=data=>{
+  clearTimeout(timer);
+  if(!data?.ok){rankingStatus.textContent="取得エラー";clean();return}
+  const rows=Array.isArray(data.ranking)?data.ranking:[];
+  rankingStatus.textContent=`${rankingMinutes}分ランキング`;
+  rankingBody.innerHTML=rows.length?rows.map(r=>`<tr><td class="rankingRank">${Number(r.rank)||""}</td><td>${escapeRank(r.name)}</td><td>${Number(r.score||0).toLocaleString("ja-JP")}</td></tr>`).join(""):'<tr><td colspan="3" class="rankingEmpty">まだ記録がありません</td></tr>';
+  clean();
+ };
+ s.onerror=()=>{clearTimeout(timer);rankingStatus.textContent="通信エラー";clean()};
+ s.src=`${RANKING_API_URL}?minutes=${rankingMinutes}&callback=${encodeURIComponent(cb)}&_=${Date.now()}`;
+ document.body.appendChild(s);
+}
+function openRanking(m=selectedMinutes||3){rankingOverlay.classList.add("show");rankingOverlay.setAttribute("aria-hidden","false");loadRanking(m)}
+function closeRanking(){rankingOverlay.classList.remove("show");rankingOverlay.setAttribute("aria-hidden","true")}
+rankingTitleBtn?.addEventListener("click",()=>{playDecision();openRanking(selectedMinutes||3)});
+rankingCloseBtn?.addEventListener("click",()=>{playDecision();closeRanking()});
+document.querySelectorAll(".rankingDurationBtn").forEach(b=>b.addEventListener("click",()=>loadRanking(Number(b.dataset.rankMin))));
+function prepareResultRanking(){
+ if(testerMode){resultRankingBox.style.display="none";return}
+ resultRankingBox.style.display="";
+ resultRankStatus.textContent="";
+ resultRankName.value=getSavedPlayerName();
+ resultRankSubmit.disabled=false;
+}
+function submitScoreToRanking(){
+ if(testerMode)return;
+ const name=(resultRankName.value||"").trim().slice(0,16);
+ if(!name){resultRankStatus.textContent="名前を入力してください";return}
+ setSavedPlayerName(name); syncPlayerNameUI();
+ resultRankSubmit.disabled=true;resultRankStatus.textContent="送信中...";
+ const body=new URLSearchParams({name,score:String(Math.floor(score)),minutes:String(selectedMinutes),version:GAME_VERSION});
+ fetch(RANKING_API_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:body.toString()})
+ .then(()=>{resultRankStatus.textContent="登録しました";setTimeout(()=>loadRanking(selectedMinutes),1000)})
+ .catch(()=>{resultRankStatus.textContent="登録できませんでした";resultRankSubmit.disabled=false});
+}
+resultRankSubmit?.addEventListener("click",()=>{playDecision();submitScoreToRanking()});
 
 const boardEl=document.getElementById("board");
 const scoreEl=document.getElementById("score");
