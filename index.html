@@ -653,7 +653,7 @@ body{
    ステージ制なし・広告なし・ブラウザでそのまま遊べます。
   </div>
   <div class="fanmade">非公式・ファンメイド</div>
-  <div class="titleVersion">VERSION v2.36</div>
+  <div class="titleVersion">VERSION v2.37</div>
   <div class="durationLabel">制限時間を選択</div>
   <div id="durationGrid" class="durationGrid">
    <button class="durationBtn" data-min="1">1分</button>
@@ -706,7 +706,7 @@ body{
   <div id="board" class="board"></div>
   <div id="fx" class="fx"></div>
  </div>
- <div class="currentVersionMini">v2.36</div>
+ <div class="currentVersionMini">v2.37</div>
 </div>
 
 
@@ -743,7 +743,7 @@ body{
    <div id="summonHint" class="menuHint">種類を選んで閉じたあと、置きたいマスをタップしてください。2個セットは横並びで配置します。</div>
   </div>
 
-  <div class="menuVersion">VERSION v2.36</div>
+  <div class="menuVersion">VERSION v2.37</div>
  </div>
 </div>
 
@@ -818,7 +818,8 @@ body{
    <button class="infoClose" data-close-info type="button">戻る</button>
   </div>
 
-  <div class="historyItem"><h3><span class="historyVersion">v2.36</span>チュートリアル修正</h3><p>フリープレイ整理時に欠落していたチュートリアル処理を復旧しました。8ステップの自動実演、一時停止・再開、終了、再生を再び利用できます。</p></div>
+  <div class="historyItem"><h3><span class="historyVersion">v2.37</span>特殊ブロック同時生成修正</h3><p>1回の操作で複数の特殊生成条件が独立して成立した場合、それぞれの特殊ブロックを同時生成するよう修正しました。同じ成立形で条件が重なる場合は、花 ＞ 爆弾 ＞ 矢印の優先順位で1つに整理します。</p></div>
+    <div class="historyItem"><h3><span class="historyVersion">v2.36</span>チュートリアル修正</h3><p>フリープレイ整理時に欠落していたチュートリアル処理を復旧しました。8ステップの自動実演、一時停止・再開、終了、再生を再び利用できます。</p></div>
     <div class="historyItem"><h3><span class="historyVersion">v2.35</span>やり直しボタン撤去</h3><p>通常ゲーム・フリープレイともに「やり直し」ボタンを撤去し、ゲーム中の上部操作を「メニュー」と「タイトルへ」に整理しました。</p></div>
     <div class="historyItem"><h3><span class="historyVersion">v2.34</span>フリープレイ操作整理</h3><p>フリープレイ開始時のパスワード入力を撤去し、ボタン1タップで開始できるように変更。フリープレイ中は「やり直し」ボタンを非表示にしました。</p></div>
     <div class="historyItem"><h3><span class="historyVersion">v2.33</span>設定メニュー・フリープレイ拡張</h3><p>ゲームメニューを追加し、BGM/SEを3段階＋ミュートで個別調整可能にしました。テスターモードを時間無制限のフリープレイへ変更し、特殊ブロック召喚を追加。妨害トリガーの見た目と出現頻度を調整し、消去中の空マスは透明表示に修正。ミッション表示を盤面上部へ移動しました。</p></div>
@@ -1539,43 +1540,117 @@ function fiveShapeContaining(pos){
  return {cells,color};
 }
 
-function chooseSpecial(match,preferred=null,moveDir=null){
+function chooseSpecials(match,preferred=null,moveDir=null){
  const contains=(arr,p)=>p&&arr.some(q=>q.r===p.r&&q.c===p.c);
+ const candidates=[];
 
- // 5直列
- let g=match.groups.find(x=>x.cells.length>=5 && contains(x.cells,preferred));
- if(!g)g=match.groups.find(x=>x.cells.length>=5);
- if(g){
-  const pos=contains(g.cells,preferred)?preferred:g.cells[Math.floor(g.cells.length/2)];
-  return {pos,special:"flower",color:g.color};
+ const addCandidate=(special,cells,color,pos,priority,shapeCells=null)=>{
+  if(!cells?.length || !pos)return;
+  const keys=new Set(cells.map(p=>K(p.r,p.c)));
+  candidates.push({special,cells:[...cells],keys,color,pos,priority,shapeCells});
+ };
+
+ // 5個以上の直列 → 花
+ for(const g of match.groups.filter(x=>x.cells.length>=5)){
+  const pos=contains(g.cells,preferred) ? preferred : g.cells[Math.floor(g.cells.length/2)];
+  addCandidate("flower",g.cells,g.color,pos,3);
  }
 
- // L字 / T字 / 十字：横3+と縦3+が交差してできた5個以上の形
- // preferred がない連鎖中でも検出する。
- const shaped=matchedBentShape(match,preferred) || fiveShapeContaining(preferred);
- if(shaped){
-  const pos = preferred && shaped.cells.some(p=>p.r===preferred.r&&p.c===preferred.c)
-   ? preferred
-   : (shaped.cross || shaped.cells[Math.floor(shaped.cells.length/2)]);
-  return {pos,special:"bomb",color:shaped.color,shapeCells:shaped.cells};
+ // L/T/十字：実際に交差する横3+と縦3+の組み合わせごとに候補化
+ const hs=match.groups.filter(g=>g.dir==="H");
+ const vs=match.groups.filter(g=>g.dir==="V");
+ for(const h of hs){
+  for(const v of vs){
+   if(h.color!==v.color)continue;
+   const cross=h.cells.find(a=>v.cells.some(b=>a.r===b.r&&a.c===b.c));
+   if(!cross)continue;
+   const map=new Map();
+   for(const p of [...h.cells,...v.cells])map.set(K(p.r,p.c),{r:p.r,c:p.c});
+   const cells=[...map.values()];
+   if(cells.length<5)continue;
+   const pos=contains(cells,preferred)?preferred:cross;
+   addCandidate("bomb",cells,h.color,pos,2,cells);
+  }
  }
 
- // 2x2
- let sq=match.squares.find(x=>contains(x.cells,preferred));
- if(!sq)sq=match.squares[0];
- if(sq){
+ // 2×2 → 爆弾
+ for(const sq of match.squares){
   const pos=contains(sq.cells,preferred)?preferred:sq.cells[0];
-  return {pos,special:"bomb",color:sq.color};
+  addCandidate("bomb",sq.cells,sq.color,pos,2);
  }
 
- // 4直列
- g=match.groups.find(x=>x.cells.length===4 && contains(x.cells,preferred));
- if(!g)g=match.groups.find(x=>x.cells.length===4);
- if(g){
+ // 4直列 → 矢印
+ for(const g of match.groups.filter(x=>x.cells.length===4)){
   const pos=contains(g.cells,preferred)?preferred:g.cells[1];
-  return {pos,special:g.dir==="H"?"lineH":"lineV",color:g.color};
+  addCandidate(g.dir==="H"?"lineH":"lineV",g.cells,g.color,pos,1);
  }
- return null;
+
+ if(!candidates.length)return [];
+
+ // 候補同士がセルを共有する場合は同じ成立形として扱う。
+ // 同じ成立形では 花 > 爆弾 > 矢印 を優先し、独立した成立形はすべて残す。
+ const parent=candidates.map((_,i)=>i);
+ const find=i=>parent[i]===i?i:(parent[i]=find(parent[i]));
+ const unite=(a,b)=>{
+  a=find(a); b=find(b);
+  if(a!==b)parent[b]=a;
+ };
+ for(let i=0;i<candidates.length;i++){
+  for(let j=i+1;j<candidates.length;j++){
+   let overlap=false;
+   for(const k of candidates[i].keys){
+    if(candidates[j].keys.has(k)){overlap=true;break;}
+   }
+   if(overlap)unite(i,j);
+  }
+ }
+
+ const components=new Map();
+ candidates.forEach((x,i)=>{
+  const root=find(i);
+  if(!components.has(root))components.set(root,[]);
+  components.get(root).push(x);
+ });
+
+ const chosen=[];
+ for(const list of components.values()){
+  list.sort((a,b)=>{
+   if(b.priority!==a.priority)return b.priority-a.priority;
+   const ap=contains(a.cells,preferred)?1:0;
+   const bp=contains(b.cells,preferred)?1:0;
+   if(bp!==ap)return bp-ap;
+   return b.cells.length-a.cells.length;
+  });
+  chosen.push(list[0]);
+ }
+
+ // 操作したブロックを含む生成を先頭へ。以降は盤面順で安定化。
+ chosen.sort((a,b)=>{
+  const ap=contains(a.cells,preferred)?1:0;
+  const bp=contains(b.cells,preferred)?1:0;
+  if(bp!==ap)return bp-ap;
+  if(a.pos.r!==b.pos.r)return a.pos.r-b.pos.r;
+  return a.pos.c-b.pos.c;
+ });
+
+ // 万一、生成位置が重なったら高優先度側だけを残す。
+ const used=new Set(), result=[];
+ for(const x of chosen){
+  const k=K(x.pos.r,x.pos.c);
+  if(used.has(k))continue;
+  used.add(k);
+  result.push({
+   pos:{r:x.pos.r,c:x.pos.c},
+   special:x.special,
+   color:x.color,
+   shapeCells:x.shapeCells||null
+  });
+ }
+ return result;
+}
+
+function chooseSpecial(match,preferred=null,moveDir=null){
+ return chooseSpecials(match,preferred,moveDir)[0] || null;
 }
 
 function randomPresentColor(){
@@ -1866,22 +1941,24 @@ async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
 async function resolveOneMatch(match,preferred=null,moveDir=null){
  if(match.cells.size===0)return false;
 
- const spawn=chooseSpecial(match,preferred,moveDir);
+ const spawns=chooseSpecials(match,preferred,moveDir);
  const clearSet=new Set(match.cells);
- if(spawn?.shapeCells){
-  for(const p of spawn.shapeCells) clearSet.add(K(p.r,p.c));
- }
- let protectedKey=null;
 
- if(spawn){
-  protectedKey=K(spawn.pos.r,spawn.pos.c);
-  const current=B[spawn.pos.r][spawn.pos.c];
-  // Create it BEFORE collapse so it survives, then falls naturally if needed.
+ for(const spawn of spawns){
+  if(spawn.shapeCells){
+   for(const p of spawn.shapeCells) clearSet.add(K(p.r,p.c));
+  }
+ }
+
+ // 同一手で独立して成立した特殊はすべて生成し、
+ // 生成マスを消去対象から外して同時に残す。
+ for(const spawn of spawns){
+  const key=K(spawn.pos.r,spawn.pos.c);
   B[spawn.pos.r][spawn.pos.c]=make(null,spawn.special);
-  clearSet.delete(protectedKey);
+  clearSet.delete(key);
  }
 
- await clearCollapseOnly(clearSet,protectedKey);
+ await clearCollapseOnly(clearSet,null);
  return true;
 }
 
@@ -2116,39 +2193,40 @@ async function trySwap(a,b){
    // さらに、そのマッチが新しい特殊を作る場合は生成位置を保護して残す。
    const madeMatch=scanMatches();
    const triggerMoveDir = (a.r===b.r) ? "H" : "V";
-   const madeSpecial=chooseSpecial(madeMatch,movedNormalPos,triggerMoveDir);
+   const madeSpecials=chooseSpecials(madeMatch,movedNormalPos,triggerMoveDir);
 
    // まず、同時成立した通常マッチを特殊効果の消去範囲に合流。
    for(const k of madeMatch.cells){
     clearSet.add(k);
    }
 
-   if(madeSpecial &&
-     madeSpecial.pos.r===movedNormalPos.r &&
-     madeSpecial.pos.c===movedNormalPos.c){
-    protectedKey=K(movedNormalPos.r,movedNormalPos.c);
-    B[movedNormalPos.r][movedNormalPos.c]=make(null,madeSpecial.special);
-    clearSet.delete(protectedKey);
-
-    // L/T字など、shapeCellsを持つ特殊生成も同時消去へ含める。
+   for(const madeSpecial of madeSpecials){
     if(madeSpecial.shapeCells){
-     for(const p of madeSpecial.shapeCells){
-      const k=K(p.r,p.c);
-      if(k!==protectedKey) clearSet.add(k);
-     }
+     for(const p of madeSpecial.shapeCells)clearSet.add(K(p.r,p.c));
     }
+   }
 
-    const name =
-     madeSpecial.special==="bomb" ? "爆弾" :
-     (madeSpecial.special==="lineH" || madeSpecial.special==="lineV") ? "列消し" :
-     madeSpecial.special==="flower" ? "花" : "特殊";
+   // 特殊発動と同じ操作で成立した通常マッチも、独立成立分をすべて生成。
+   for(const madeSpecial of madeSpecials){
+    const key=K(madeSpecial.pos.r,madeSpecial.pos.c);
+    B[madeSpecial.pos.r][madeSpecial.pos.c]=make(null,madeSpecial.special);
+    clearSet.delete(key);
+   }
 
-    setMsg(`${specialTile.special==="bomb"?"爆弾":"列消し"}発動！＋ 新しい${name}生成！`);
+   if(madeSpecials.length){
+    const names=madeSpecials.map(s=>
+     s.special==="bomb" ? "💣" :
+     (s.special==="lineH" ? "↔️" :
+      s.special==="lineV" ? "↕️" :
+      s.special==="flower" ? "🌸" : "特殊")
+    ).join(" ");
+    setMsg(`${specialTile.special==="bomb"?"爆弾":"列消し"}発動！＋ ${names}生成！`);
    }else{
     setMsg(specialTile.special==="bomb" ? "爆弾発動！" : "列消し発動！");
    }
 
-   await clearCollapseOnly(clearSet,protectedKey);
+   protectedKey=null;
+   await clearCollapseOnly(clearSet,null);
    await cascade();
    setMsg("隣のブロックへスワイプ");
    scheduleStableCheck();
