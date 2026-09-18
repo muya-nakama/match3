@@ -652,7 +652,7 @@ body{
 .resultRankRow{display:flex;gap:7px}
 .resultRankName{min-width:0;flex:1;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:#0f1724;color:#fff;padding:9px}
 .resultRankSubmit{background:#ff78ba;color:#fff;padding:9px 11px}
-.resultRankStatus{min-height:18px;margin-top:6px;font-size:11px;color:#a8b7c9}
+.resultRankStatus{min-height:18px;margin-top:6px;font-size:11px;line-height:1.55;white-space:pre-line;color:#a8b7c9}
 
 
 /* ===== v2.40 Player Name ===== */
@@ -716,7 +716,7 @@ body{
    ステージ制なし・広告なし・ブラウザでそのまま遊べます。
   </div>
   <div class="fanmade">非公式・ファンメイド</div>
-  <div class="titleVersion">VERSION v2.40</div>
+  <div class="titleVersion">VERSION v2.42</div>
 
   <div class="playerNameBox">
    <div class="playerNameLabel">プレイヤーネーム</div>
@@ -779,7 +779,7 @@ body{
   <div id="board" class="board"></div>
   <div id="fx" class="fx"></div>
  </div>
- <div class="currentVersionMini">v2.40</div>
+ <div class="currentVersionMini">v2.42</div>
 </div>
 
 
@@ -815,7 +815,7 @@ body{
    <div id="summonHint" class="menuHint">種類を選んで閉じたあと、置きたいマスをタップしてください。2個セットは横並びで配置します。</div>
   </div>
 
-  <div class="menuVersion">VERSION v2.40</div>
+  <div class="menuVersion">VERSION v2.42</div>
  </div>
 </div>
 
@@ -898,6 +898,8 @@ body{
    <button class="infoClose" data-close-info type="button">戻る</button>
   </div>
 
+  <div class="historyItem"><h3><span class="historyVersion">v2.42</span>生成直後の特殊ブロック保護</h3><p>特殊ブロックの生成と同時に別の特殊効果へ巻き込まれた場合、その場では起爆せず盤面に残るようにしました。以前から盤面にある特殊ブロックの巻き込み発動は従来どおりです。</p></div>
+  <div class="historyItem"><h3><span class="historyVersion">v2.41</span>高得点更新・同名記録整理</h3><p>同じプレイヤーネームの記録は制限時間ごとに最高得点のみランキングへ表示。登録時に、高得点の更新・維持・初回登録を結果画面で確認できるようにしました。</p></div>
   <div class="historyItem"><h3><span class="historyVersion">v2.40</span>プレイヤーネーム保存</h3><p>タイトル画面にプレイヤーネーム設定を追加。保存した名前は端末内に保持され、次回以降のランキング登録時にデフォルト名として自動入力されます。</p></div>
     <div class="historyItem"><h3><span class="historyVersion">v2.39</span>ランキング導線変更</h3><p>ランキングをゲーム中メニューから外し、タイトル画面から直接確認できるように変更しました。</p></div>
     <div class="historyItem"><h3><span class="historyVersion">v2.38</span>共有ランキング追加</h3><p>通常プレイ終了後に名前を入力してスコア登録できる共有ランキングを追加。ゲームメニューから1〜10分別のTOP20を確認できます。フリープレイはランキング対象外です。</p></div>
@@ -1024,7 +1026,7 @@ function stopBgm(){
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.40";
+const GAME_VERSION="2.42";
 let rankingMinutes=3,rankingJsonpSeq=0;
 
 const titleScreen=document.getElementById("titleScreen");
@@ -1365,10 +1367,32 @@ function submitScoreToRanking(){
  if(!name){resultRankStatus.textContent="名前を入力してください";return}
  setSavedPlayerName(name); syncPlayerNameUI();
  resultRankSubmit.disabled=true;resultRankStatus.textContent="送信中...";
- const body=new URLSearchParams({name,score:String(Math.floor(score)),minutes:String(selectedMinutes),version:GAME_VERSION});
- fetch(RANKING_API_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:body.toString()})
- .then(()=>{resultRankStatus.textContent="登録しました";setTimeout(()=>loadRanking(selectedMinutes),1000)})
- .catch(()=>{resultRankStatus.textContent="登録できませんでした";resultRankSubmit.disabled=false});
+ const submittedScore=Math.floor(score);
+ const cb=`__match3Submit${Date.now()}_${++rankingJsonpSeq}`,s=document.createElement("script");
+ let finished=false;
+ const clean=()=>{if(finished)return;finished=true;try{delete window[cb]}catch(e){}s.remove()};
+ const failed=message=>{resultRankStatus.textContent=message;resultRankSubmit.disabled=false;clean()};
+ const timer=setTimeout(()=>{if(!finished)failed("登録結果を確認できませんでした\n通信を確認して、もう一度お試しください")},10000);
+ window[cb]=data=>{
+  clearTimeout(timer);
+  if(!data?.ok){failed("登録できませんでした");return}
+  const best=Number(data.bestScore||0).toLocaleString("ja-JP");
+  const submitted=Number(data.submittedScore||submittedScore).toLocaleString("ja-JP");
+  const rank=Number(data.rank)>0?`\n現在の順位：${Number(data.rank)}位`:"";
+  if(data.result==="updated"){
+   const previous=Number(data.previousScore||0).toLocaleString("ja-JP");
+   resultRankStatus.textContent=`🎉 高得点を更新しました！\n${previous}点 → ${best}点${rank}`;
+  }else if(data.result==="kept"){
+   resultRankStatus.textContent=`高得点を維持しました\n現在：${best}点／今回：${submitted}点${rank}`;
+  }else{
+   resultRankStatus.textContent=`ランキングに登録しました！\nスコア：${best}点${rank}`;
+  }
+  clean();
+ };
+ s.onerror=()=>{clearTimeout(timer);failed("登録できませんでした")};
+ const query=new URLSearchParams({action:"submit",name,score:String(submittedScore),minutes:String(selectedMinutes),version:GAME_VERSION,callback:cb,_:String(Date.now())});
+ s.src=`${RANKING_API_URL}?${query.toString()}`;
+ document.body.appendChild(s);
 }
 resultRankSubmit?.addEventListener("click",()=>{playDecision();submitScoreToRanking()});
 
@@ -1847,15 +1871,17 @@ function randomPresentColor(){
  return colors.length ? colors[Math.floor(Math.random()*colors.length)] : Math.floor(Math.random()*COLORS);
 }
 
-function expandTriggeredSpecials(clearSet,protectedKey=null,skipFlowerKeys=null){
+function expandTriggeredSpecials(clearSet,protectedKey=null,skipFlowerKeys=null,protectedKeys=null){
  const fired=new Set(), triggers=[], flowers=[];
  const skipFlowers=skipFlowerKeys||new Set();
+ const protectedSet=new Set(protectedKeys||[]);
+ if(protectedKey)protectedSet.add(protectedKey);
  let changed=true;
 
  while(changed){
   changed=false;
   for(const s of [...clearSet]){
-   if(s===protectedKey || fired.has(s))continue;
+   if(protectedSet.has(s) || fired.has(s))continue;
    const [r,c]=parseK(s),t=B[r]?.[c];
    if(!t?.special || isBlocked(t) || isTrigger(t))continue;
 
@@ -1882,6 +1908,7 @@ function expandTriggeredSpecials(clearSet,protectedKey=null,skipFlowerKeys=null)
    fired.add(s);
    triggers.push({r,c,special:t.special});
    for(const x of effectAt(r,c,t.special)){
+    if(protectedSet.has(x))continue;
     if(!clearSet.has(x)){clearSet.add(x);changed=true}
    }
   }
@@ -2046,14 +2073,16 @@ function progressMissionForTile(t){
  }else updateMissionUI();
 }
 async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
- if(protectedKey)clearSet.delete(protectedKey);
+ const protectedKeys=new Set(opts.protectedKeys||[]);
+ if(protectedKey)protectedKeys.add(protectedKey);
+ for(const key of protectedKeys)clearSet.delete(key);
 
  let triggers=[], flowerTriggers=[];
  if(!opts.suppressSpecialExpansion){
-  const expanded=expandTriggeredSpecials(clearSet,protectedKey,opts.skipFlowerKeys);
+  const expanded=expandTriggeredSpecials(clearSet,protectedKey,opts.skipFlowerKeys,protectedKeys);
   triggers=expanded.triggers;
   flowerTriggers=expanded.flowers;
-  if(protectedKey)clearSet.delete(protectedKey);
+  for(const key of protectedKeys)clearSet.delete(key);
  }
  if(opts.manualTriggers) triggers.push(...opts.manualTriggers);
 
@@ -2072,7 +2101,7 @@ async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
  const actual=new Set();
  for(const s of clearSet){
   const [r,c]=parseK(s),t=B[r]?.[c];
-  if(t && !isBlocked(t) && !isTrigger(t) && s!==protectedKey)actual.add(s);
+  if(t && !isBlocked(t) && !isTrigger(t) && !protectedKeys.has(s))actual.add(s);
  }
 
  if(actual.size>0) playChainSfx(chainLevel);
@@ -2134,15 +2163,18 @@ async function resolveOneMatch(match,preferred=null,moveDir=null){
   }
  }
 
+ const generatedKeys=new Set();
+
  // 同一手で独立して成立した特殊はすべて生成し、
  // 生成マスを消去対象から外して同時に残す。
  for(const spawn of spawns){
   const key=K(spawn.pos.r,spawn.pos.c);
   B[spawn.pos.r][spawn.pos.c]=make(null,spawn.special);
+  generatedKeys.add(key);
   clearSet.delete(key);
  }
 
- await clearCollapseOnly(clearSet,null);
+ await clearCollapseOnly(clearSet,null,{protectedKeys:generatedKeys});
  return true;
 }
 
@@ -2390,10 +2422,13 @@ async function trySwap(a,b){
     }
    }
 
+   const generatedKeys=new Set();
+
    // 特殊発動と同じ操作で成立した通常マッチも、独立成立分をすべて生成。
    for(const madeSpecial of madeSpecials){
     const key=K(madeSpecial.pos.r,madeSpecial.pos.c);
     B[madeSpecial.pos.r][madeSpecial.pos.c]=make(null,madeSpecial.special);
+    generatedKeys.add(key);
     clearSet.delete(key);
    }
 
@@ -2410,7 +2445,7 @@ async function trySwap(a,b){
    }
 
    protectedKey=null;
-   await clearCollapseOnly(clearSet,null);
+   await clearCollapseOnly(clearSet,null,{protectedKeys:generatedKeys});
    await cascade();
    setMsg("隣のブロックへスワイプ");
    scheduleStableCheck();
