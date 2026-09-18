@@ -145,12 +145,22 @@ button{border:0;border-radius:10px;padding:9px 12px;font-weight:800;background:#
 
 .titleScreen{
  position:fixed; inset:0; z-index:9999;
- display:flex; align-items:center; justify-content:center;
- background:linear-gradient(180deg,#0e131a,#151d27);
- padding:24px;
+ display:flex; align-items:flex-start; justify-content:flex-start;
+ overflow-x:hidden; overflow-y:auto;
+ overscroll-behavior:contain;
+ -webkit-overflow-scrolling:touch;
+ background:
+  radial-gradient(circle at 50% 18%,rgba(76,151,219,.20),transparent 48%),
+  linear-gradient(180deg,rgba(7,15,27,.62),rgba(10,22,38,.76));
+ padding:
+  calc(24px + env(safe-area-inset-top))
+  24px
+  calc(64px + env(safe-area-inset-bottom));
 }
 .titleCard{
  width:min(92vw,420px);
+ margin:auto;
+ flex:0 0 auto;
  background:#1b2430;
  border:1px solid rgba(255,255,255,.12);
  border-radius:22px;
@@ -716,7 +726,7 @@ body{
    ステージ制なし・広告なし・ブラウザでそのまま遊べます。
   </div>
   <div class="fanmade">非公式・ファンメイド</div>
-  <div class="titleVersion">VERSION v2.42</div>
+  <div class="titleVersion">VERSION v2.44</div>
 
   <div class="playerNameBox">
    <div class="playerNameLabel">プレイヤーネーム</div>
@@ -779,7 +789,7 @@ body{
   <div id="board" class="board"></div>
   <div id="fx" class="fx"></div>
  </div>
- <div class="currentVersionMini">v2.42</div>
+ <div class="currentVersionMini">v2.44</div>
 </div>
 
 
@@ -815,7 +825,7 @@ body{
    <div id="summonHint" class="menuHint">種類を選んで閉じたあと、置きたいマスをタップしてください。2個セットは横並びで配置します。</div>
   </div>
 
-  <div class="menuVersion">VERSION v2.42</div>
+  <div class="menuVersion">VERSION v2.44</div>
  </div>
 </div>
 
@@ -898,6 +908,8 @@ body{
    <button class="infoClose" data-close-info type="button">戻る</button>
   </div>
 
+  <div class="historyItem"><h3><span class="historyVersion">v2.44</span>タイトル下部の表示領域調整</h3><p>端末の戻る・ホーム操作領域でクレジットが隠れないよう、タイトル画面下部に安全な余白を追加。画面が低い端末ではタイトル全体を縦スクロールできるようにしました。</p></div>
+  <div class="historyItem"><h3><span class="historyVersion">v2.43</span>タイトル背景追加</h3><p>タイトル画面にもゲーム中と同じ青いジグソー背景を表示。文字やボタンが読みやすいよう、暗い青のグラデーションを重ねました。</p></div>
   <div class="historyItem"><h3><span class="historyVersion">v2.42</span>生成直後の特殊ブロック保護</h3><p>特殊ブロックの生成と同時に別の特殊効果へ巻き込まれた場合、その場では起爆せず盤面に残るようにしました。以前から盤面にある特殊ブロックの巻き込み発動は従来どおりです。</p></div>
   <div class="historyItem"><h3><span class="historyVersion">v2.41</span>高得点更新・同名記録整理</h3><p>同じプレイヤーネームの記録は制限時間ごとに最高得点のみランキングへ表示。登録時に、高得点の更新・維持・初回登録を結果画面で確認できるようにしました。</p></div>
   <div class="historyItem"><h3><span class="historyVersion">v2.40</span>プレイヤーネーム保存</h3><p>タイトル画面にプレイヤーネーム設定を追加。保存した名前は端末内に保持され、次回以降のランキング登録時にデフォルト名として自動入力されます。</p></div>
@@ -1026,7 +1038,7 @@ function stopBgm(){
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.42";
+const GAME_VERSION="2.44";
 let rankingMinutes=3,rankingJsonpSeq=0;
 
 const titleScreen=document.getElementById("titleScreen");
