@@ -3,18 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Match-3 練習用 v2.12 Visual Draft</title>
+<title>Match-3 練習用 v2.45</title>
 <style>
 :root{
  --bg:#10141a; --panel:#1a212b; --text:#f5f7fa; --sub:#aeb8c5;
  --cell:min(9.7vw,52px); --gap:5px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{
+ width:100%;height:100%;overflow:hidden;overscroll-behavior:none
+}
 body{
- margin:0;min-height:100vh;background:var(--bg);color:var(--text);
+ margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;
+ overscroll-behavior:none;background:var(--bg);color:var(--text);
  font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;
  display:flex;justify-content:center;align-items:flex-start
 }
+@supports(height:100dvh){body{height:100dvh}}
 .app{width:min(100%,560px);padding:14px 10px 28px}
 h1{font-size:18px;margin:0 0 8px}
 .top{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}
@@ -650,6 +655,9 @@ body{
 .rankingDurationGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0 12px}
 .rankingDurationBtn{padding:8px 3px;border-radius:9px;background:#273343;color:#dfe9f4;font-size:11px;border:1px solid rgba(255,255,255,.1)}
 .rankingDurationBtn.selected{background:#f2f5f8;color:#16202a;outline:2px solid #7cc7ff}
+.rankingModeGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:0 0 12px}
+.rankingModeBtn{padding:9px 6px;border-radius:10px;background:#273343;color:#dfe9f4;font-size:12px;border:1px solid rgba(255,255,255,.1)}
+.rankingModeBtn.selected{background:#ff5ca8;color:#fff;outline:2px solid rgba(255,255,255,.72)}
 .rankingStatus{min-height:22px;text-align:center;color:#9fb0c3;font-size:12px;margin:4px 0 7px}
 .rankingTable{width:100%;border-collapse:collapse;font-size:12px}
 .rankingTable th,.rankingTable td{padding:8px 5px;border-bottom:1px solid rgba(255,255,255,.075)}
@@ -726,7 +734,7 @@ body{
    ステージ制なし・広告なし・ブラウザでそのまま遊べます。
   </div>
   <div class="fanmade">非公式・ファンメイド</div>
-  <div class="titleVersion">VERSION v2.44</div>
+  <div class="titleVersion">VERSION v2.45</div>
 
   <div class="playerNameBox">
    <div class="playerNameLabel">プレイヤーネーム</div>
@@ -789,7 +797,7 @@ body{
   <div id="board" class="board"></div>
   <div id="fx" class="fx"></div>
  </div>
- <div class="currentVersionMini">v2.44</div>
+ <div class="currentVersionMini">v2.45</div>
 </div>
 
 
@@ -825,7 +833,7 @@ body{
    <div id="summonHint" class="menuHint">種類を選んで閉じたあと、置きたいマスをタップしてください。2個セットは横並びで配置します。</div>
   </div>
 
-  <div class="menuVersion">VERSION v2.44</div>
+  <div class="menuVersion">VERSION v2.45</div>
  </div>
 </div>
 
@@ -833,6 +841,7 @@ body{
  <div class="rankingPanel">
   <div class="rankingHeader"><div class="rankingTitle">ランキング TOP 20</div><button id="rankingCloseBtn" class="rankingClose">閉じる</button></div>
   <div class="rankingDurationGrid"><button class="rankingDurationBtn" data-rank-min="1">1分</button><button class="rankingDurationBtn" data-rank-min="2">2分</button><button class="rankingDurationBtn selected" data-rank-min="3">3分</button><button class="rankingDurationBtn" data-rank-min="4">4分</button><button class="rankingDurationBtn" data-rank-min="5">5分</button><button class="rankingDurationBtn" data-rank-min="6">6分</button><button class="rankingDurationBtn" data-rank-min="7">7分</button><button class="rankingDurationBtn" data-rank-min="8">8分</button><button class="rankingDurationBtn" data-rank-min="9">9分</button><button class="rankingDurationBtn" data-rank-min="10">10分</button></div>
+  <div class="rankingModeGrid"><button class="rankingModeBtn selected" data-rank-interference="0">妨害なし</button><button class="rankingModeBtn" data-rank-interference="1">妨害あり</button></div>
   <div id="rankingStatus" class="rankingStatus">読み込み待ち</div>
   <table class="rankingTable"><thead><tr><th>順位</th><th>名前</th><th>スコア</th></tr></thead><tbody id="rankingBody"></tbody></table>
  </div>
@@ -908,6 +917,7 @@ body{
    <button class="infoClose" data-close-info type="button">戻る</button>
   </div>
 
+  <div class="historyItem"><h3><span class="historyVersion">v2.45</span>ランキングを妨害設定別に分離</h3><p>1〜10分の各ランキングを「妨害なし」「妨害あり」に分けて表示。プレイヤーネーム・制限時間・妨害設定が同じ記録は最高得点のみ維持するようにしました。</p></div>
   <div class="historyItem"><h3><span class="historyVersion">v2.44</span>タイトル下部の表示領域調整</h3><p>端末の戻る・ホーム操作領域でクレジットが隠れないよう、タイトル画面下部に安全な余白を追加。画面が低い端末ではタイトル全体を縦スクロールできるようにしました。</p></div>
   <div class="historyItem"><h3><span class="historyVersion">v2.43</span>タイトル背景追加</h3><p>タイトル画面にもゲーム中と同じ青いジグソー背景を表示。文字やボタンが読みやすいよう、暗い青のグラデーションを重ねました。</p></div>
   <div class="historyItem"><h3><span class="historyVersion">v2.42</span>生成直後の特殊ブロック保護</h3><p>特殊ブロックの生成と同時に別の特殊効果へ巻き込まれた場合、その場では起爆せず盤面に残るようにしました。以前から盤面にある特殊ブロックの巻き込み発動は従来どおりです。</p></div>
@@ -961,7 +971,7 @@ body{
   <div id="resultTime" class="resultTime">3分 CHALLENGE</div>
   <div id="resultScore" class="resultScore">0</div>
  <div id="resultRankingBox" class="resultRankingBox">
-  <div class="resultRankingTitle">ランキングに登録</div>
+  <div id="resultRankingTitle" class="resultRankingTitle">ランキングに登録</div>
   <div class="resultRankRow"><input id="resultRankName" class="resultRankName" maxlength="16" placeholder="名前（16文字まで）"><button id="resultRankSubmit" class="resultRankSubmit">登録</button></div>
   <div id="resultRankStatus" class="resultRankStatus"></div>
  </div>
@@ -1038,8 +1048,8 @@ function stopBgm(){
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.44";
-let rankingMinutes=3,rankingJsonpSeq=0;
+const GAME_VERSION="2.45";
+let rankingMinutes=3,rankingInterference=false,rankingJsonpSeq=0;
 
 const titleScreen=document.getElementById("titleScreen");
 const startBtn=document.getElementById("startBtn");
@@ -1336,39 +1346,46 @@ const rankingCloseBtn=document.getElementById("rankingCloseBtn");
 const rankingStatus=document.getElementById("rankingStatus");
 const rankingBody=document.getElementById("rankingBody");
 const resultRankingBox=document.getElementById("resultRankingBox");
+const resultRankingTitle=document.getElementById("resultRankingTitle");
 const resultRankName=document.getElementById("resultRankName");
 const resultRankSubmit=document.getElementById("resultRankSubmit");
 const resultRankStatus=document.getElementById("resultRankStatus");
 
 function escapeRank(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function loadRanking(minutes=rankingMinutes){
+function loadRanking(minutes=rankingMinutes,interference=rankingInterference){
  rankingMinutes=Number(minutes)||3;
+ rankingInterference=Boolean(interference);
+ const requestedMinutes=rankingMinutes,requestedInterference=rankingInterference;
  document.querySelectorAll(".rankingDurationBtn").forEach(b=>b.classList.toggle("selected",Number(b.dataset.rankMin)===rankingMinutes));
+ document.querySelectorAll(".rankingModeBtn").forEach(b=>b.classList.toggle("selected",(b.dataset.rankInterference==="1")===rankingInterference));
  rankingStatus.textContent="読み込み中...";rankingBody.innerHTML="";
  const cb=`__match3Rank${Date.now()}_${++rankingJsonpSeq}`,s=document.createElement("script");
  let finished=false;
  const clean=()=>{if(finished)return;finished=true;try{delete window[cb]}catch(e){}s.remove()};
- const timer=setTimeout(()=>{if(finished)return;rankingStatus.textContent="取得できませんでした";rankingBody.innerHTML='<tr><td colspan="3" class="rankingEmpty">通信を確認してください</td></tr>';clean()},7000);
+ const timer=setTimeout(()=>{if(finished)return;if(requestedMinutes!==rankingMinutes||requestedInterference!==rankingInterference){clean();return}rankingStatus.textContent="取得できませんでした";rankingBody.innerHTML='<tr><td colspan="3" class="rankingEmpty">通信を確認してください</td></tr>';clean()},7000);
  window[cb]=data=>{
   clearTimeout(timer);
+  if(requestedMinutes!==rankingMinutes||requestedInterference!==rankingInterference){clean();return}
   if(!data?.ok){rankingStatus.textContent="取得エラー";clean();return}
   const rows=Array.isArray(data.ranking)?data.ranking:[];
-  rankingStatus.textContent=`${rankingMinutes}分ランキング`;
+  rankingStatus.textContent=`${requestedMinutes}分・妨害${requestedInterference?"あり":"なし"}`;
   rankingBody.innerHTML=rows.length?rows.map(r=>`<tr><td class="rankingRank">${Number(r.rank)||""}</td><td>${escapeRank(r.name)}</td><td>${Number(r.score||0).toLocaleString("ja-JP")}</td></tr>`).join(""):'<tr><td colspan="3" class="rankingEmpty">まだ記録がありません</td></tr>';
   clean();
  };
- s.onerror=()=>{clearTimeout(timer);rankingStatus.textContent="通信エラー";clean()};
- s.src=`${RANKING_API_URL}?minutes=${rankingMinutes}&callback=${encodeURIComponent(cb)}&_=${Date.now()}`;
+ s.onerror=()=>{clearTimeout(timer);if(requestedMinutes===rankingMinutes&&requestedInterference===rankingInterference)rankingStatus.textContent="通信エラー";clean()};
+ s.src=`${RANKING_API_URL}?minutes=${requestedMinutes}&interference=${requestedInterference?1:0}&callback=${encodeURIComponent(cb)}&_=${Date.now()}`;
  document.body.appendChild(s);
 }
-function openRanking(m=selectedMinutes||3){rankingOverlay.classList.add("show");rankingOverlay.setAttribute("aria-hidden","false");loadRanking(m)}
+function openRanking(m=selectedMinutes||3,interference=interferenceEnabled){rankingOverlay.classList.add("show");rankingOverlay.setAttribute("aria-hidden","false");loadRanking(m,interference)}
 function closeRanking(){rankingOverlay.classList.remove("show");rankingOverlay.setAttribute("aria-hidden","true")}
-rankingTitleBtn?.addEventListener("click",()=>{playDecision();openRanking(selectedMinutes||3)});
+rankingTitleBtn?.addEventListener("click",()=>{playDecision();openRanking(selectedMinutes||3,interferenceEnabled)});
 rankingCloseBtn?.addEventListener("click",()=>{playDecision();closeRanking()});
 document.querySelectorAll(".rankingDurationBtn").forEach(b=>b.addEventListener("click",()=>loadRanking(Number(b.dataset.rankMin))));
+document.querySelectorAll(".rankingModeBtn").forEach(b=>b.addEventListener("click",()=>loadRanking(rankingMinutes,b.dataset.rankInterference==="1")));
 function prepareResultRanking(){
  if(testerMode){resultRankingBox.style.display="none";return}
  resultRankingBox.style.display="";
+ if(resultRankingTitle)resultRankingTitle.textContent=`ランキングに登録（妨害${interferenceEnabled?"あり":"なし"}）`;
  resultRankStatus.textContent="";
  resultRankName.value=getSavedPlayerName();
  resultRankSubmit.disabled=false;
@@ -1380,6 +1397,7 @@ function submitScoreToRanking(){
  setSavedPlayerName(name); syncPlayerNameUI();
  resultRankSubmit.disabled=true;resultRankStatus.textContent="送信中...";
  const submittedScore=Math.floor(score);
+ const submittedInterference=interferenceEnabled;
  const cb=`__match3Submit${Date.now()}_${++rankingJsonpSeq}`,s=document.createElement("script");
  let finished=false;
  const clean=()=>{if(finished)return;finished=true;try{delete window[cb]}catch(e){}s.remove()};
@@ -1402,7 +1420,7 @@ function submitScoreToRanking(){
   clean();
  };
  s.onerror=()=>{clearTimeout(timer);failed("登録できませんでした")};
- const query=new URLSearchParams({action:"submit",name,score:String(submittedScore),minutes:String(selectedMinutes),version:GAME_VERSION,callback:cb,_:String(Date.now())});
+ const query=new URLSearchParams({action:"submit",name,score:String(submittedScore),minutes:String(selectedMinutes),interference:submittedInterference?"1":"0",version:GAME_VERSION,callback:cb,_:String(Date.now())});
  s.src=`${RANKING_API_URL}?${query.toString()}`;
  document.body.appendChild(s);
 }
