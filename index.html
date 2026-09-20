@@ -534,10 +534,32 @@ body{
 }
 </style>
 
+
+<style id="threePageLayoutStyles">
+.app{width:min(100%,520px);}
+.pageView{display:none;}
+.pageView.active{display:block;}
+#topPage .card,#multiPage .card{background:rgba(10,16,28,.84)!important;}
+.modeChoice{display:grid;gap:10px;margin-top:12px;}
+.modeChoice button{margin-top:0;}
+.creditLine{margin-top:18px;text-align:center;font-size:10px;color:rgba(255,255,255,.56);}
+.pageHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;}
+.pageHeaderTitle{font-size:18px;font-weight:900;}
+.miniProfile{display:flex;align-items:center;gap:7px;max-width:150px;padding:4px 7px;border-radius:999px;background:rgba(8,14,24,.74);border:1px solid rgba(255,255,255,.10);}
+.miniProfileAvatar{width:28px;height:28px;border-radius:50%;overflow:hidden;background:#17202b;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex:0 0 auto;}
+.miniProfileAvatar img{width:100%;height:100%;object-fit:cover;display:block;}
+.miniProfileName{font-size:11px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pageBackBtn{width:auto;margin:0 0 10px;padding:9px 12px;font-size:12px;}
+#multiPage .connectionCompact{margin-top:0;}
+#singleProfileFloat{position:fixed;right:10px;top:8px;z-index:10030;display:none;}
+#singleProfileFloat.show{display:flex;}
+.battleGameScreen.singleModeView .battleTopBar{display:none!important;}
+</style>
 </head>
 <body>
   <main class="app">
-    <section class="card">
+    <section id="topPage" class="pageView active">
+      <section class="card">
       <h1>モンパッチ</h1>
       <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.48</div>
       <div class="sub">
@@ -572,7 +594,13 @@ body{
         <div id="battleAvatarStatus" class="avatarStatus">未設定時は名前の先頭2文字を表示します</div>
       </div>
 
-      <button id="singleModeBtn" type="button">シングルモード</button>
+      <div class="modeChoice">
+        <button id="singleModeBtn" type="button">シングルモード</button>
+        <button id="multiModeBtn" type="button">マルチ対戦</button>
+      </div>
+      <div class="creditLine">仲間六夜 feat. ChatGPT</div>
+
+      <div id="multiControlsSource">
       <button id="createRoomBtn" type="button" disabled>ルームID作成</button>
 
       <div class="row" style="margin-top:18px">
@@ -607,14 +635,27 @@ body{
       </div>
 
       <div id="message" class="message"></div>
+      </div>
+      </section>
+    </section>
+
+    <section id="multiPage" class="pageView">
+      <section class="card">
+        <div class="pageHeader">
+          <div class="pageHeaderTitle">マルチ対戦</div>
+          <div id="multiMiniProfile" class="miniProfile"></div>
+        </div>
+        <button id="multiTopBackBtn" class="pageBackBtn" type="button">総合トップへ</button>
+        <div id="multiLobbyMount"></div>
+      </section>
     </section>
   </main>
 
+  <div id="singleProfileFloat" class="miniProfile"></div>
   <section id="battleGameScreen" class="battleGameScreen" aria-hidden="true">
     <div class="battleTopBar">
       <span id="gameModeTitle">Match-3</span>
       <span id="battleRoomMini" class="roomMini">ROOM ------</span>
-      <button id="singleReturnLauncherBtn" type="button" style="display:none;width:auto;margin:0;padding:5px 9px;font-size:11px">入口へ戻る</button>
     </div>
     <div id="battleLoadOverlay" class="battleLoadOverlay">ゲームを準備しています…</div>
     <iframe
@@ -629,7 +670,7 @@ body{
     <div class="battleResultCard">
       <div class="battleResultTitle">対戦結果</div>
       <div id="battleResultRows" class="battleResultRows"></div>
-      <button id="battleReturnBtn" class="battleReturnBtn" type="button">ロビーへ戻る</button>
+      <button id="battleReturnBtn" class="battleReturnBtn" type="button">総合トップへ</button>
     </div>
   </div>
 
@@ -649,6 +690,61 @@ body{
       appId: "1:980764398973:web:1db93bb561942e6fa52814"
     };
     const onlineStatus = document.getElementById("onlineStatus");
+    const topPage = document.getElementById("topPage");
+    const multiPage = document.getElementById("multiPage");
+    const multiModeBtn = document.getElementById("multiModeBtn");
+    const multiTopBackBtn = document.getElementById("multiTopBackBtn");
+    const multiLobbyMount = document.getElementById("multiLobbyMount");
+    const multiControlsSource = document.getElementById("multiControlsSource");
+    const multiMiniProfile = document.getElementById("multiMiniProfile");
+    const singleProfileFloat = document.getElementById("singleProfileFloat");
+
+    function profileMarkup(){
+      const name = localStorage.getItem("match3_ranking_name") || "Player";
+      const av = localStorage.getItem("match3_profile_avatar") || "";
+      const initials = Array.from(name).slice(0,2).join("");
+      return (av
+        ? `<div class="miniProfileAvatar"><img src="${av}" alt=""></div>`
+        : `<div class="miniProfileAvatar">${initials}</div>`) +
+        `<div class="miniProfileName">${name}</div>`;
+    }
+    function refreshPageProfiles(){
+      const html=profileMarkup();
+      if(multiMiniProfile) multiMiniProfile.innerHTML=html;
+      if(singleProfileFloat) singleProfileFloat.innerHTML=html;
+    }
+    function showTopPage(){
+      topPage?.classList.add("active");
+      multiPage?.classList.remove("active");
+      singleProfileFloat?.classList.remove("show");
+      battleGameScreen?.classList.remove("singleModeView");
+      window.scrollTo({top:0,behavior:"auto"});
+    }
+    function showMultiPage(){
+      refreshPageProfiles();
+      topPage?.classList.remove("active");
+      multiPage?.classList.add("active");
+      singleProfileFloat?.classList.remove("show");
+      window.scrollTo({top:0,behavior:"auto"});
+    }
+    function prepareThreePageLayout(){
+      if(multiControlsSource && multiLobbyMount){
+        const connection=document.querySelector(".connectionCompact");
+        if(connection) multiLobbyMount.appendChild(connection);
+        while(multiControlsSource.firstChild) multiLobbyMount.appendChild(multiControlsSource.firstChild);
+        multiControlsSource.remove();
+      }
+      refreshPageProfiles();
+    }
+    setTimeout(prepareThreePageLayout,0);
+    multiModeBtn?.addEventListener("click", showMultiPage);
+    multiTopBackBtn?.addEventListener("click", async()=>{
+      if(currentRoomCode && currentUser){
+        try{ await leaveRoom(currentRoomCode,currentUser.uid); }catch(e){ console.error(e); }
+        resetLobbyUI();
+      }
+      showTopPage();
+    });
 const uidEl = document.getElementById("uid");
     const battlePlayerNameInput = document.getElementById("battlePlayerNameInput");
     const battlePlayerNameSave = document.getElementById("battlePlayerNameSave");
@@ -679,7 +775,6 @@ const uidEl = document.getElementById("uid");
     const battleLoadOverlay = document.getElementById("battleLoadOverlay");
     const battleRoomMini = document.getElementById("battleRoomMini");
     const gameModeTitle = document.getElementById("gameModeTitle");
-    const singleReturnLauncherBtn = document.getElementById("singleReturnLauncherBtn");
     const battleResultOverlay = document.getElementById("battleResultOverlay");
     const battleResultRows = document.getElementById("battleResultRows");
     const battleReturnBtn = document.getElementById("battleReturnBtn");
@@ -1291,49 +1386,8 @@ const uidEl = document.getElementById("uid");
       battleResultOverlay.setAttribute("aria-hidden","false");
     }
 
-    async function returnFromResults() {
-      if (!currentRoomCode || !currentUser) return;
-
-      battleResultOverlay.classList.remove("show");
-      battleResultOverlay.setAttribute("aria-hidden","true");
-      battleGameScreen.classList.remove("show");
-      battleGameScreen.setAttribute("aria-hidden","true");
-      battleStarted = false;
-
-      try {
-        await firebase.database()
-          .ref(`rooms/${currentRoomCode}/players/${currentUser.uid}/returned`)
-          .set(true);
-
-        await firebase.database().ref(`rooms/${currentRoomCode}`).transaction(room => {
-          if (!room || room.status !== "results" || !room.players) return room;
-          const ps = Object.values(room.players);
-          if (!ps.length || !ps.every(p => p && p.returned === true)) return room;
-
-          Object.values(room.players).forEach(p => {
-            p.ready = false;
-            p.score = 0;
-            p.finished = false;
-            p.returned = false;
-            delete p.finalScore;
-          });
-          room.status = "waiting";
-          room.startAt = null;
-          room.startedAt = null;
-          room.resultAt = null;
-          room.results = null;
-          room.attacks = null;
-          return room;
-        });
-      } catch (e) {
-        console.error("return to lobby failed", e);
-        setMessage("ロビー復帰処理に失敗しました。");
-      }
-    }
-
-    singleReturnLauncherBtn.addEventListener("click", () => {
-      if (gameMode !== "single") return;
-
+    async function returnToOverallTop() {
+      // 内蔵ゲームを停止
       try {
         const w = battleGameFrame.contentWindow;
         if (w) {
@@ -1347,17 +1401,26 @@ const uidEl = document.getElementById("uid");
         }
       } catch(e) {}
 
-      gameMode = "launcher";
-      battleGameScreen.classList.remove("show");
-      battleGameScreen.setAttribute("aria-hidden", "true");
-      battleLoadOverlay.classList.remove("hidden");
-      battleLoadOverlay.textContent = "ゲーム準備完了";
-      singleReturnLauncherBtn.style.display = "none";
-      gameModeTitle.textContent = "Match-3";
-      battleRoomMini.textContent = "ROOM ------";
-    });
+      // 対戦中/対戦結果から戻る場合は部屋から退出して総合トップへ。
+      if (currentRoomCode && currentUser) {
+        const leavingCode = currentRoomCode;
+        try {
+          await leaveRoom(leavingCode, currentUser.uid);
+        } catch (e) {
+          console.error("leave room on overall-top failed", e);
+        }
+      }
 
-    battleReturnBtn.addEventListener("click", returnFromResults);
+      resetLobbyUI();
+      showTopPage();
+      if (gameModeTitle) gameModeTitle.textContent = "Match-3";
+      if (battleRoomMini) battleRoomMini.textContent = "ROOM ------";
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+
+    window.__returnToOverallTop = returnToOverallTop;
+
+    battleReturnBtn.addEventListener("click", returnToOverallTop);
 
 
     function loadBundledBattleGame() {
@@ -1397,7 +1460,6 @@ const uidEl = document.getElementById("uid");
 
         gameMode = "single";
         if (gameModeTitle) gameModeTitle.textContent = "Match-3 シングル";
-        if (singleReturnLauncherBtn) singleReturnLauncherBtn.style.display = "inline-block";
 
         // 対戦用パッチが残っている場合は元へ戻す。
         try {
@@ -1413,7 +1475,19 @@ const uidEl = document.getElementById("uid");
         const resultRankingBox = d.getElementById("resultRankingBox");
         const resultLabel = d.querySelector(".resultLabel");
 
-        if (gameTitleBtn) gameTitleBtn.style.display = "";
+        if (gameTitleBtn) {
+          const topBtn = gameTitleBtn.cloneNode(true);
+          topBtn.textContent = "総合トップへ";
+          topBtn.style.display = "";
+          gameTitleBtn.replaceWith(topBtn);
+          topBtn.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            ev.stopImmediatePropagation();
+            if (parent && typeof parent.__returnToOverallTop === "function") {
+              parent.__returnToOverallTop();
+            }
+          });
+        }
         if (resultBtns) resultBtns.style.display = "";
         if (resultRankingBox) resultRankingBox.style.display = "";
         if (resultLabel) resultLabel.textContent = "FINAL SCORE";
@@ -1440,6 +1514,11 @@ const uidEl = document.getElementById("uid");
     }
 
     function enterSingleMode() {
+      refreshPageProfiles();
+      topPage?.classList.remove("active");
+      multiPage?.classList.remove("active");
+      singleProfileFloat?.classList.add("show");
+      battleGameScreen?.classList.add("singleModeView");
       battleRoomMini.textContent = "SINGLE MODE";
       battleGameScreen.classList.add("show");
       battleGameScreen.setAttribute("aria-hidden", "false");
@@ -1469,8 +1548,9 @@ const uidEl = document.getElementById("uid");
         if (!d) return;
 
         gameMode = "battle";
+        singleProfileFloat?.classList.remove("show");
+        battleGameScreen?.classList.remove("singleModeView");
         if (gameModeTitle) gameModeTitle.textContent = "Match-3 Battle";
-        if (singleReturnLauncherBtn) singleReturnLauncherBtn.style.display = "none";
 
         // 対戦時はソロ専用導線を隠す
         const gameTitleBtn = d.getElementById("gameTitleBtn");
