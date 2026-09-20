@@ -1,0 +1,30 @@
+モンパッチ v2.62 PWA追加版
+
+【アップロード先】
+GitHub の本家リポジトリ match3 の最上位（index.html がある場所）
+
+【手順】
+1. このZIPを展開する
+2. 中にある index.html、game.html、js フォルダ、download フォルダをまとめてアップロードする
+3. 同名ファイルは上書きする
+4. GitHub Pagesへの反映後、次のURLを確認する
+
+本家:
+https://muya-nakama.github.io/match3/
+
+PWA版:
+https://muya-nakama.github.io/match3/download/
+
+【PWA版の仕様】
+・Service Workerの範囲は download/ 内だけです。本家のキャッシュには干渉しません。
+・初回はオンラインでPWA版を一度開き、読み込みを完了してください。
+・通信できない場合はシングルプレイ、フリープレイ、チュートリアルを利用できます。
+・オフライン中はランキング対象外で、マルチ対戦とオンラインランキングは利用できません。
+・オンライン復帰時に version.json の確認が成功するとオンライン機能を再開します。
+・新しい版がある場合は更新ボタンを表示し、更新完了までオンライン機能を停止します。
+
+【更新時の必須作業】
+・download/version.json の version を上げる
+・download/pwa.js の APP_VERSION を同じ値へ変更する
+・download/sw.js の CACHE_NAME を同じ版へ変更する
+・game.html と download/game.html の更新履歴を更新する
