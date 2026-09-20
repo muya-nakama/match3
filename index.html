@@ -553,6 +553,42 @@ body{
 #multiPage .connectionCompact{margin-top:0;}
 #singleProfileFloat{position:fixed;right:10px;top:8px;z-index:10030;display:none;}
 #singleProfileFloat.show{display:flex;}
+#singleTopBackBtn{
+  position:fixed;
+  left:10px;
+  top:8px;
+  z-index:10031;
+  display:none;
+  width:auto;
+  margin:0;
+  padding:8px 11px;
+  border-radius:999px;
+  font-size:11px;
+  background:rgba(8,14,24,.78);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+}
+#singleTopBackBtn.show{display:block;}
+#multiTopBackFixed{
+  position:fixed;
+  left:10px;
+  top:8px;
+  z-index:10031;
+  display:none;
+  width:auto;
+  margin:0;
+  padding:8px 11px;
+  border-radius:999px;
+  font-size:11px;
+  background:rgba(8,14,24,.78);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(4px);
+  -webkit-backdrop-filter:blur(4px);
+}
+#multiTopBackFixed.show{display:block;}
 .battleGameScreen.singleModeView .battleTopBar{display:none!important;}
 </style>
 </head>
@@ -561,7 +597,7 @@ body{
     <section id="topPage" class="pageView active">
       <section class="card">
       <h1>モンパッチ</h1>
-      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.48</div>
+      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.49</div>
       <div class="sub">
         シングルモードとオンライン対戦モードが遊べるマッチパズル。
       </div>
@@ -645,12 +681,13 @@ body{
           <div class="pageHeaderTitle">マルチ対戦</div>
           <div id="multiMiniProfile" class="miniProfile"></div>
         </div>
-        <button id="multiTopBackBtn" class="pageBackBtn" type="button">総合トップへ</button>
         <div id="multiLobbyMount"></div>
       </section>
     </section>
   </main>
 
+  <button id="singleTopBackBtn" type="button">総合トップへ</button>
+  <button id="multiTopBackFixed" type="button">総合トップへ</button>
   <div id="singleProfileFloat" class="miniProfile"></div>
   <section id="battleGameScreen" class="battleGameScreen" aria-hidden="true">
     <div class="battleTopBar">
@@ -693,11 +730,12 @@ body{
     const topPage = document.getElementById("topPage");
     const multiPage = document.getElementById("multiPage");
     const multiModeBtn = document.getElementById("multiModeBtn");
-    const multiTopBackBtn = document.getElementById("multiTopBackBtn");
+    const multiTopBackFixed = document.getElementById("multiTopBackFixed");
     const multiLobbyMount = document.getElementById("multiLobbyMount");
     const multiControlsSource = document.getElementById("multiControlsSource");
     const multiMiniProfile = document.getElementById("multiMiniProfile");
     const singleProfileFloat = document.getElementById("singleProfileFloat");
+    const singleTopBackBtn = document.getElementById("singleTopBackBtn");
 
     function profileMarkup(){
       const name = localStorage.getItem("match3_ranking_name") || "Player";
@@ -1513,11 +1551,37 @@ const uidEl = document.getElementById("uid");
       }
     }
 
+    multiTopBackFixed?.addEventListener("click", async () => {
+      await returnToOverallTop();
+      multiTopBackFixed?.classList.remove("show");
+      topPage?.classList.add("active");
+      multiPage?.classList.remove("active");
+      window.scrollTo({ top: 0, behavior: "auto" });
+    });
+
+    singleTopBackBtn?.addEventListener("click", async () => {
+      await returnToOverallTop();
+      singleProfileFloat?.classList.remove("show");
+      singleTopBackBtn?.classList.remove("show");
+      battleGameScreen?.classList.remove("singleModeView");
+      topPage?.classList.add("active");
+      multiPage?.classList.remove("active");
+      window.scrollTo({ top: 0, behavior: "auto" });
+    });
+
+    if (multiModeBtn) {
+      multiModeBtn.addEventListener("click", () => {
+        multiTopBackFixed?.classList.add("show");
+      });
+    }
+
     function enterSingleMode() {
       refreshPageProfiles();
       topPage?.classList.remove("active");
       multiPage?.classList.remove("active");
       singleProfileFloat?.classList.add("show");
+      singleTopBackBtn?.classList.add("show");
+      multiTopBackFixed?.classList.remove("show");
       battleGameScreen?.classList.add("singleModeView");
       battleRoomMini.textContent = "SINGLE MODE";
       battleGameScreen.classList.add("show");
