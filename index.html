@@ -448,6 +448,20 @@
       padding:2px 5px;
     }
   </style>
+
+<style>
+/* Entry connection info: intentionally de-emphasized */
+#onlineStatus{
+  font-size:11px !important;
+  line-height:1.2 !important;
+}
+#uid{
+  font-size:9px !important;
+  line-height:1.15 !important;
+  opacity:.68 !important;
+}
+</style>
+
 </head>
 <body>
   <main class="app">
@@ -1799,7 +1813,7 @@ const uidEl = document.getElementById("uid");
 
         onlineStatus.textContent = "オンライン";
         onlineStatus.className = "value status ok";
-        uidEl.textContent = user.uid;
+        uidEl.textContent = String(user.uid).slice(0, 6) + "…";
 
         refreshEntryButtons();
         setMessage("準備完了。名前を確認して、部屋を作るか6桁番号を入力して参加してください。");
