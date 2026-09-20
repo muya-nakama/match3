@@ -623,13 +623,47 @@ body{
 }
 </style>
 
+
+<style id="multiLobbyCompactActions">
+#multiPage #joinRoomArea.hiddenByRoom{display:none!important;}
+
+#multiPage .roomShareRow{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-top:7px;
+}
+#multiPage .roomShareRow button{
+  width:auto;
+  margin-top:0!important;
+  padding:7px 10px;
+  font-size:11px;
+  border-radius:9px;
+}
+
+#multiPage .lobbyActionRow{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:10px;
+}
+#multiPage .lobbyActionRow button{
+  width:100%;
+  margin-top:0!important;
+  padding:10px 10px;
+  font-size:13px;
+  border-radius:10px;
+}
+</style>
+
 </head>
 <body>
   <main class="app">
     <section id="topPage" class="pageView active">
       <section class="card">
       <h1>モンパッチ</h1>
-      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.51</div>
+      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.52</div>
       <div class="sub">
         シングルモードとオンライン対戦モードが遊べるマッチパズル。
       </div>
@@ -671,7 +705,7 @@ body{
       <div id="multiControlsSource">
       <button id="createRoomBtn" type="button" disabled>ルームID作成</button>
 
-      <div class="row" style="margin-top:18px">
+      <div id="joinRoomArea" class="row" style="margin-top:18px">
         <div class="label">部屋番号を入力して参加</div>
         <input id="joinCodeInput" inputmode="numeric" maxlength="6"
                placeholder="ルームIDを入力"
@@ -682,7 +716,10 @@ body{
       <div id="roomBox" class="room">
         <div class="roomLabel">現在の部屋番号</div>
         <div id="roomCode" class="roomCode">------</div>
-        <button id="copyRoomBtn" type="button" style="margin-top:12px">ルームIDをコピー</button>
+        <div class="roomShareRow">
+          <button id="copyRoomBtn" type="button">ルームIDをコピー</button>
+          <button id="shareRoomBtn" type="button">共有</button>
+        </div>
       </div>
 
       <div id="playersBox" class="row" style="display:none;margin-top:18px">
@@ -694,8 +731,10 @@ body{
       </div>
 
       <button id="readyBtn" type="button" disabled style="display:none">準備</button>
-      <button id="startBattleBtn" type="button" disabled style="display:none">開始（0/0）</button>
-      <button id="leaveRoomBtn" type="button" disabled style="display:none">ゲーム終了</button>
+      <div class="lobbyActionRow">
+        <button id="leaveRoomBtn" type="button" disabled style="display:none">ゲーム終了</button>
+        <button id="startBattleBtn" type="button" disabled style="display:none">開始（0/0）</button>
+      </div>
 
       <div id="countdownBox" class="room" style="margin-top:18px">
         <div class="roomLabel">開始カウントダウン</div>
@@ -827,10 +866,12 @@ const uidEl = document.getElementById("uid");
     const singleModeBtn = document.getElementById("singleModeBtn");
     const createRoomBtn = document.getElementById("createRoomBtn");
     const joinRoomBtn = document.getElementById("joinRoomBtn");
+    const joinRoomArea = document.getElementById("joinRoomArea");
     const joinCodeInput = document.getElementById("joinCodeInput");
     const roomBox = document.getElementById("roomBox");
     const roomCodeEl = document.getElementById("roomCode");
     const copyRoomBtn = document.getElementById("copyRoomBtn");
+    const shareRoomBtn = document.getElementById("shareRoomBtn");
     const playersBox = document.getElementById("playersBox");
     const playersList = document.getElementById("playersList");
     const readyCount = document.getElementById("readyCount");
@@ -1808,6 +1849,7 @@ const uidEl = document.getElementById("uid");
     }
 
     function showRoom(code, message) {
+      joinRoomArea?.classList.add("hiddenByRoom");
       currentRoomCode = code;
       roomCodeEl.textContent = code;
       roomBox.classList.add("show");
@@ -1985,6 +2027,7 @@ const uidEl = document.getElementById("uid");
     }
 
     function resetLobbyUI() {
+      joinRoomArea?.classList.remove("hiddenByRoom");
       if (currentRoomRef) {
         currentRoomRef.off();
         currentRoomRef = null;
@@ -2155,6 +2198,33 @@ const uidEl = document.getElementById("uid");
           } catch (err) {
             console.error(err);
             setMessage("コピーに失敗しました。ルームIDは " + currentRoomCode + " です。");
+          }
+        });
+
+        shareRoomBtn?.addEventListener("click", async () => {
+          if (!currentRoomCode) return;
+
+          const shareText = `モンパッチ\nルームID: ${currentRoomCode}`;
+
+          try {
+            if (navigator.share) {
+              await navigator.share({
+                title: "モンパッチ",
+                text: shareText
+              });
+            } else {
+              await copyText(currentRoomCode);
+              setMessage("共有機能が使えないため、ルームIDをコピーしました。");
+            }
+          } catch (err) {
+            if (err && err.name === "AbortError") return;
+            console.error(err);
+            try {
+              await copyText(currentRoomCode);
+              setMessage("共有に失敗したため、ルームIDをコピーしました。");
+            } catch (_) {
+              setMessage("共有に失敗しました。");
+            }
           }
         });
 
