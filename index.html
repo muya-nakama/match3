@@ -597,7 +597,7 @@ body{
     <section id="topPage" class="pageView active">
       <section class="card">
       <h1>モンパッチ</h1>
-      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.49</div>
+      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.50</div>
       <div class="sub">
         シングルモードとオンライン対戦モードが遊べるマッチパズル。
       </div>
@@ -776,11 +776,12 @@ body{
     }
     setTimeout(prepareThreePageLayout,0);
     multiModeBtn?.addEventListener("click", showMultiPage);
-    multiTopBackBtn?.addEventListener("click", async()=>{
+    multiTopBackFixed?.addEventListener("click", async()=>{
       if(currentRoomCode && currentUser){
         try{ await leaveRoom(currentRoomCode,currentUser.uid); }catch(e){ console.error(e); }
         resetLobbyUI();
       }
+      multiTopBackFixed?.classList.remove("show");
       showTopPage();
     });
 const uidEl = document.getElementById("uid");
@@ -2212,6 +2213,8 @@ const uidEl = document.getElementById("uid");
     syncBattlePlayerNameUI();
     syncAvatarUI();
     loadBundledBattleGame();
+    // Firebase匿名認証はモード選択前に全体で開始する。
+    // シングル/マルチのどちらを選んでも同じ currentUser / UID を使用する。
     start();
   </script>
 </body>
