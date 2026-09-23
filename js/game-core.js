@@ -64,7 +64,7 @@ function stopBgm(){
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.62";
+const GAME_VERSION="2.63";
 let rankingMinutes=3,rankingInterference=false,rankingJsonpSeq=0;
 
 const titleScreen=document.getElementById("titleScreen");
@@ -84,7 +84,13 @@ const interferenceToggle=document.getElementById("interferenceToggle");
 const missionBox=document.getElementById("missionBox");
 
 const ROWS=7, COLS=9, COLORS=5;
-const BASE_SCORE=100;
+// ピカピカの得点表。個数点は実際に消えたブロックだけに付ける。
+const SPECIAL_POINTS={line: [300,30],bomb:[500,50],flower:[600,60],lineLine:[1200,60],bombLine:[1600,80],flowerLine:[1800,90],bombBomb:[2000,100],flowerBomb:[2200,110],flowerFlower:[2400,120]};
+function scoreSpecial(kind,count){
+ const [base,perTile]=SPECIAL_POINTS[kind];
+ score+=base+perTile*count;
+}
+function scoreKind(special){return special==="flower"?"flower":special==="bomb"?"bomb":"line";}
 let B=[], score=0, selected=null, lock=false, pointerStart=null, nextId=1;
 let selectedMinutes=3, remainingSeconds=180, timerId=null;
 let gameRunning=false, pendingFinish=false, chainLevel=1, testerMode=false, tutorialMode=false;
@@ -98,10 +104,10 @@ const HINT_DELAY=4000, DEADLOCK_PENALTY=3, MISSION_GOAL=14, ICE_TRIGGER_CHANCE=0
 const COLOR_NAMES=["赤","青","緑","黄","紫"];
 
 function chainMultiplier(){
- return Math.min(2, 1 + (chainLevel-1)*0.25);
+ return chainLevel;
 }
 function updateChain(){
- chainEl.textContent=`×${chainMultiplier().toFixed(2)}`;
+ chainEl.textContent=`×${chainMultiplier()}`;
 }
 function syncToggles(){
  for(const b of [titleHintToggle,hudHintToggle]){
@@ -1176,6 +1182,7 @@ function progressMissionForTile(t){
  mission.progress++;
  if(mission.progress>=mission.goal){
   chainAttackCount++;
+  score+=500; // 消去ミッション完了
   pendingChainAttacks++;
   showMissionSuccess();
   newMission();
@@ -1229,26 +1236,49 @@ async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
    triggeredIce.push({r,c});
   }else if((t.ice||0)>0){
    t.ice=Math.max(0,t.ice-1);
+   if(t.ice===0)score+=800; // 氷の完全除去
   }else if(t.chain){
    t.chain=false;
+   score+=500; // チェーン解除
   }
  }
 
  render(null,actual);
  await sleep(135);
 
+ // 一つの消去で同じセルを二重加点しない。通常マッチと特殊効果は分けて数える。
+ const ordinaryKeys=new Set(opts.directMatchKeys||[]);
+ const specialKind=opts.scoreKind;
+ const attributed=new Set(ordinaryKeys);
+ // 追加発動した特殊ごとに、未計上の消去セルを割り当てる。
+ // 重なる効果は最初の発動だけが個数点を受け取る。
+ const extraScores=[];
+ for(const trigger of triggers){
+  const cells=[...effectAt(trigger.r,trigger.c,trigger.special),K(trigger.r,trigger.c)];
+  const count=cells.filter(k=>actual.has(k)&&!attributed.has(k)&&(attributed.add(k),true)).length;
+  extraScores.push([scoreKind(trigger.special),count]);
+ }
+ for(const flower of flowerTriggers){
+  const cells=[K(flower.r,flower.c),...flower.targets.map(p=>K(p.r,p.c))];
+  const count=cells.filter(k=>actual.has(k)&&!attributed.has(k)&&(attributed.add(k),true)).length;
+  extraScores.push(["flower",count]);
+ }
+ const specialCount=[...actual].filter(k=>!attributed.has(k)).length;
+ if(specialKind)scoreSpecial(specialKind,specialCount);
+ for(const [kind,count] of extraScores)scoreSpecial(kind,count);
  for(const s of actual){
   const [r,c]=parseK(s),t=B[r]?.[c];
   if(t){
    progressMissionForTile(t);
    B[r][c]=null;
-   score+=Math.round(BASE_SCORE*chainMultiplier());
+   if(ordinaryKeys.has(s) || (!specialKind && !attributed.has(s)))score+=20*chainLevel;
   }
  }
  for(const p of triggeredIce){
   if(B[p.r]?.[p.c]?.trigger==="ice"){
    B[p.r][p.c]=null;
    iceAttackCount++;
+   score+=600; // 相手へ送る氷ブロック解除
    pendingIceAttacks++;
   }
  }
@@ -1338,7 +1368,7 @@ async function specialCombo(a,b,oldA,oldB){
   playFlower();
   await playFlowerPropagationDual(a,b,targets);
   await clearCollapseOnly(allBoard(),null,{
-   suppressSpecialExpansion:false,
+   scoreKind:"flowerFlower",suppressSpecialExpansion:false,
    skipSpecialKeys:new Set([K(a.r,a.c),K(b.r,b.c)])
   });
   await cascade();
@@ -1365,7 +1395,7 @@ async function specialCombo(a,b,oldA,oldB){
    playFlower();
    await playFlowerPropagation(flowerPos,targets,{stagger:true});
    setMsg("花：入れ替えた色を全消し！");
-   await clearCollapseOnly(clearSet,null,{suppressSpecialExpansion:false,skipFlowerKeys:new Set([K(flowerPos.r,flowerPos.c)])});
+   await clearCollapseOnly(clearSet,null,{scoreKind:"flower",suppressSpecialExpansion:false,skipFlowerKeys:new Set([K(flowerPos.r,flowerPos.c)])});
    await cascade();
    return true;
   }
@@ -1396,7 +1426,7 @@ async function specialCombo(a,b,oldA,oldB){
   }
 
   await clearCollapseOnly(clearSet,null,{
-   suppressSpecialExpansion:false,
+   scoreKind:isLine(other.special)?"flowerLine":"flowerBomb",suppressSpecialExpansion:false,
    skipSpecialKeys:new Set([K(flowerPos.r,flowerPos.c),K(otherPos.r,otherPos.c)])
   });
   await cascade();
@@ -1409,7 +1439,7 @@ async function specialCombo(a,b,oldA,oldB){
   clearFx(); lineFx(center.r,center.c,"lineH"); lineFx(center.r,center.c,"lineV");
   await sleep(340); clearFx();
   await clearCollapseOnly(crossSet(center.r,center.c,0),null,{
-   suppressSpecialExpansion:false,
+   scoreKind:"lineLine",suppressSpecialExpansion:false,
    skipSpecialKeys:new Set([K(a.r,a.c),K(b.r,b.c)])
   });
   await cascade(); return true;
@@ -1419,7 +1449,7 @@ async function specialCombo(a,b,oldA,oldB){
   playSfx("bomb",1.15);
   clearFx(); bombFx(center.r,center.c,1.8); await sleep(380); clearFx();
   await clearCollapseOnly(bombBombSet(center.r,center.c),null,{
-   suppressSpecialExpansion:false,
+   scoreKind:"bombBomb",suppressSpecialExpansion:false,
    skipSpecialKeys:new Set([K(a.r,a.c),K(b.r,b.c)])
   });
   await cascade(); return true;
@@ -1435,7 +1465,7 @@ async function specialCombo(a,b,oldA,oldB){
   }
   await sleep(360); clearFx();
   await clearCollapseOnly(crossSet(center.r,center.c,1),null,{
-   suppressSpecialExpansion:false,
+   scoreKind:"bombLine",suppressSpecialExpansion:false,
    skipSpecialKeys:new Set([K(a.r,a.c),K(b.r,b.c)])
   });
   await cascade(); return true;
@@ -1585,7 +1615,7 @@ async function trySwap(a,b){
    }
 
    protectedKey=null;
-   await clearCollapseOnly(clearSet,null,{protectedKeys:generatedKeys,directMatchKeys});
+   await clearCollapseOnly(clearSet,null,{scoreKind:scoreKind(specialTile.special),protectedKeys:generatedKeys,directMatchKeys});
    await cascade();
    setMsg("隣のブロックへスワイプ");
    scheduleStableCheck();
