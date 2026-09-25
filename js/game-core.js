@@ -64,7 +64,7 @@ function stopBgm(){
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.63";
+const GAME_VERSION="2.64";
 let rankingMinutes=3,rankingInterference=false,rankingJsonpSeq=0;
 
 const titleScreen=document.getElementById("titleScreen");
@@ -1190,7 +1190,6 @@ function progressMissionForTile(t){
 }
 async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
  const protectedKeys=new Set(opts.protectedKeys||[]);
- const directMatchKeys=new Set(opts.directMatchKeys||[]);
  if(protectedKey)protectedKeys.add(protectedKey);
  for(const key of protectedKeys)clearSet.delete(key);
 
@@ -1220,6 +1219,13 @@ async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
   const [r,c]=parseK(s),t=B[r]?.[c];
   if(t && !isBlocked(t) && !isTrigger(t) && !protectedKeys.has(s))actual.add(s);
  }
+ // 通常マッチとして隣接解除できるのは、実際に消える通常ブロックだけ。
+ // 特殊生成で残したマスや、特殊効果だけで消えるマスは含めない。
+ const directMatchKeys=new Set([...(opts.directMatchKeys||[])].filter(s=>{
+  if(!actual.has(s))return false;
+  const [r,c]=parseK(s);
+  return isMatchableNormal(B[r]?.[c]);
+ }));
 
  if(actual.size>0) playChainSfx(chainLevel);
 
@@ -1247,9 +1253,8 @@ async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
  await sleep(135);
 
  // 一つの消去で同じセルを二重加点しない。通常マッチと特殊効果は分けて数える。
- const ordinaryKeys=new Set(opts.directMatchKeys||[]);
  const specialKind=opts.scoreKind;
- const attributed=new Set(ordinaryKeys);
+ const attributed=new Set(directMatchKeys);
  // 追加発動した特殊ごとに、未計上の消去セルを割り当てる。
  // 重なる効果は最初の発動だけが個数点を受け取る。
  const extraScores=[];
@@ -1271,7 +1276,7 @@ async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
   if(t){
    progressMissionForTile(t);
    B[r][c]=null;
-   if(ordinaryKeys.has(s) || (!specialKind && !attributed.has(s)))score+=20*chainLevel;
+   if(directMatchKeys.has(s) || (!specialKind && !attributed.has(s)))score+=20*chainLevel;
   }
  }
  for(const p of triggeredIce){
@@ -1566,8 +1571,6 @@ async function trySwap(a,b){
    const clearSet=effectAt(pos.r,pos.c,specialTile.special);
    clearSet.add(K(pos.r,pos.c));
 
-   let protectedKey=null;
-
    // v2.6:
    // 特殊ブロックを動かした同じ操作で通常色のマッチも成立した場合、
    // 特殊効果と通常マッチを「同じ消去タイミング」にまとめる。
@@ -1614,7 +1617,6 @@ async function trySwap(a,b){
     setMsg(specialTile.special==="bomb" ? "爆弾発動！" : "列消し発動！");
    }
 
-   protectedKey=null;
    await clearCollapseOnly(clearSet,null,{scoreKind:scoreKind(specialTile.special),protectedKeys:generatedKeys,directMatchKeys});
    await cascade();
    setMsg("隣のブロックへスワイプ");
