@@ -7,10 +7,6 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>モンパッチ</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="monpatch-icon-192.png" type="image/png">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <meta name="theme-color" content="#10141a">
   <style>
     :root{
       --bg:#10141a;
@@ -563,12 +559,9 @@ body{
 .pageView{display:none;}
 .pageView.active{display:block;}
 #topPage .card,#multiPage .card{background:rgba(10,16,28,.84)!important;}
-    .modeChoice{display:grid;gap:10px;margin-top:12px;}
+.modeChoice{display:grid;gap:10px;margin-top:12px;}
     .modeChoice button{margin-top:0;}
-    .pwaStatus{display:none;margin:0 0 14px;padding:12px;border-radius:12px;background:#402b12;color:#ffe2a8;font-size:13px;line-height:1.6;border:1px solid rgba(255,209,102,.35)}
-    .pwaStatus.show{display:block}.pwaStatus.error{background:#421d24;color:#ffd0d6;border-color:rgba(255,107,107,.4)}
-    .pwaStatus button{margin-top:9px;padding:10px 12px;font-size:13px}
-    .installPwaBtn{display:none;background:#6a5cff;color:#fff}.installPwaBtn.show{display:block}
+    .pwaLink{display:block;margin-top:12px;padding:12px 14px;border-radius:13px;background:#6a5cff;color:#fff;text-align:center;text-decoration:none;font-size:14px;font-weight:900}
 .creditLine{margin-top:18px;text-align:center;font-size:10px;color:rgba(255,255,255,.56);}
 .pageHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;}
 .pageHeaderTitle{font-size:18px;font-weight:900;}
@@ -769,12 +762,10 @@ body{
     <section id="topPage" class="pageView active">
       <section class="card">
       <h1>モンパッチ</h1>
-      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.62 PWA</div>
+      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.64</div>
       <div class="sub">
         シングルモードとオンライン対戦モードが遊べるマッチパズル。
       </div>
-      <div id="pwaStatus" class="pwaStatus" role="status" aria-live="polite"></div>
-      <button id="installPwaBtn" class="installPwaBtn" type="button">ホーム画面に追加</button>
 
       <div class="connectionCompact" aria-label="接続情報">
         <span class="connectionDot" aria-hidden="true">●</span>
@@ -808,6 +799,7 @@ body{
         <button id="singleModeBtn" type="button">シングルモード</button>
         <button id="multiModeBtn" type="button">マルチ対戦</button>
       </div>
+      <a class="pwaLink" href="download/">ホーム画面に追加できるPWA版はこちら</a>
       <div class="topFanmade">非公式・ファンメイド</div>
       <div class="creditLine">
         <div>仲間六夜 feat. ChatGPT</div>
@@ -899,8 +891,7 @@ body{
     </div>
   </div>
 
-  <script src="pwa.js"></script>
-  <!-- Firebase SDK（互換版。オンライン機能用） -->
+  <!-- Firebase SDK（互換版。単体HTMLで扱いやすい方式） -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
