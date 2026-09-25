@@ -406,7 +406,7 @@ async function tutorialStep8(token){
 }
 
 async function tutorialStep9(token){
- tutorialSetText(9,"<b>鎖</b><br>ミッションクリアで相手に送られる妨害ブロックです。動かすことができず、3つ揃っても消えません。<br><br><b>消し方</b><br>隣接したブロックが消える、または特殊ブロックの効果が当たると消去できます。");
+ tutorialSetText(9,"<b>鎖</b><br>ミッションクリアで相手に送られる妨害ブロックです。動かすことができず、3つ揃っても消えません。<br><br><b>消し方</b><br>隣の通常ブロックが3個揃って消えるか、鎖そのものに特殊効果が当たると解除できます。特殊効果で隣のブロックだけが消えても解除されません。");
  tutorialBaseBoard();
  // 鎖の左隣にだけ3個消しが成立する固定盤面。
  B[3][1]=make(0); B[3][2]=make(0); B[3][3]=make(2);
@@ -418,7 +418,7 @@ async function tutorialStep9(token){
 }
 
 async function tutorialStep10(token){
- tutorialSetText(10,"<b>氷</b><br>妨害用のブロック <span class='tutorialInlineTile tile c1'><span class='blockerMark'>🧊</span></span> を消すことで相手に送れる妨害ブロックです。動かすことができず、3つ揃っても消えません。<br><br><b>消し方</b><br>隣接したブロックを1回消すと氷が欠け、2回消すと完全に消去できます。また、特殊ブロックの効果は鎖と同じように働きます。");
+ tutorialSetText(10,"<b>氷</b><br>妨害用のブロック <span class='tutorialInlineTile tile c1'><span class='blockerMark'>🧊</span></span> を消すことで相手に送れる妨害ブロックです。動かすことができず、3つ揃っても消えません。<br><br><b>消し方</b><br>隣の通常ブロックを3個揃えて消すか、氷そのものに特殊効果を当てると1段階欠けます。2回で完全に解除されます。特殊効果で隣のブロックだけが消えても欠けません。");
  tutorialBaseBoard();
  B[3][1]=make(0); B[3][2]=make(0); B[3][3]=make(2);
  B[2][3]=make(0);
