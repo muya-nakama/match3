@@ -1242,7 +1242,7 @@ async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
    triggeredIce.push({r,c});
   }else if((t.ice||0)>0){
    t.ice=Math.max(0,t.ice-1);
-   if(t.ice===0)score+=800; // 氷の完全除去
+   score+=t.ice===0?800:600; // 完全除去と1段階解除はそれぞれ1回だけ加点
   }else if(t.chain){
    t.chain=false;
    score+=500; // チェーン解除
