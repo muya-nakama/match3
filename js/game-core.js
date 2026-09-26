@@ -1553,11 +1553,8 @@ async function trySwap(a,b){
   const oldA=B[a.r][a.c], oldB=B[b.r][b.c];
   swap(a,b); playMove(); render(); await sleep(90);
 
-  // 特殊＋特殊、花＋何か
-  if(oldA?.special && oldB?.special){
-   if(await specialCombo(a,b,oldA,oldB)){setMsg("隣のブロックへスワイプ");return}
-  }
-  if(oldA?.special==="flower" || oldB?.special==="flower"){
+  // 特殊＋特殊、花＋通常ブロックを一度だけ判定する。
+  if((oldA?.special && oldB?.special) || oldA?.special==="flower" || oldB?.special==="flower"){
    if(await specialCombo(a,b,oldA,oldB)){setMsg("隣のブロックへスワイプ");return}
   }
 
