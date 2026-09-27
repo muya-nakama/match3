@@ -1,0 +1,41 @@
+モンパッチ / match3　公開・復旧に関する情報
+確認したソース：muya-nakama/match3、main、コミット 22738bb（ゲーム版 v2.66）
+更新日：2026-09-27
+
+【公開先とファイル】
+GitHub リポジトリ：https://github.com/muya-nakama/match3
+公開 URL：https://muya-nakama.github.io/match3/
+インストール用 URL：https://muya-nakama.github.io/match3/download/
+ゲームのトップはルートの index.html、インストール用は download/index.html。
+download/ にはゲーム用ファイルのコピー、manifest.webmanifest、sw.js、pwa.js、version.json、アイコン類がある。
+現行の download/version.json は 2.66.0。更新時は download/ 内のコピーとキャッシュ設定も揃える。
+GitHub Pages の公開ブランチと公開ディレクトリ、独自ドメインの有無は GitHub の Settings → Pages で確認する。
+
+【オンライン対戦：Firebase】
+Firebase プロジェクト ID：match3-battle-53092
+Realtime Database：https://match3-battle-53092-default-rtdb.asia-southeast1.firebasedatabase.app/
+認証方法：Firebase Authentication の匿名ログイン（js/bootstrap.js の signInAnonymously）。
+対戦データ：Realtime Database の rooms/ 以下（js/multi.js）。
+接続設定の原本：js/app.js と download/js/app.js の firebaseConfig。
+再構築・移転時は Firebase コンソールで Authentication（匿名ログインの有効化）、Realtime Database のリージョン、セキュリティルールを確認する。ルールと既存の対戦データはこの ZIP に含まれない。必要なら Firebase 側で別途エクスポート・保管する。
+別の Firebase プロジェクトへ移す場合は、両方の app.js の firebaseConfig と認証・DB 設定を移転先に合わせる。
+
+【ランキング：Google Apps Script】
+現在の Web アプリ URL：
+https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec
+接続先の記述箇所：js/game-core.js と download/js/game-core.js。
+Apps Script のソース、紐づくスプレッドシート、保存済みランキング、デプロイ設定・アクセス権はこの ZIP には含まれない。管理アカウントでプロジェクトとシートを確認し、ソースとデータのバックアップを別途保管する。移転して Web アプリ URL が変わる際は両方の game-core.js を更新する。
+
+【完全バックアップと復旧】
+このフォルダの全ファイルを保管すれば、静的なゲーム画面・画像・スクリプトは再配置できる。ただしオンライン対戦とランキングの継続には上記の外部サービスも必要。
+編集のたびに全ファイル入り ZIP を受け取り、スマホに保存。動作確認後に OneDrive 側のバックアップも更新する。古い正常版は必要な期間残す。
+復旧時：ZIP を展開して match3 フォルダに全ファイルが揃うことを確認し、GitHub リポジトリに反映。GitHub Pages の公開を確認して、トップ・単独プレイ・オンライン対戦・ランキング・インストール版をそれぞれ試す。
+Termux 側の既存手順：スマホの Download/ゲーム/モンパッチ/match3/ に全ファイルを置き、Termux で upload3 を実行する（端末の ~/.bashrc に設定済みの関数）。upload3 はファイルの追加・更新をコピーするが、元フォルダから削除したファイルを Git 側から自動削除しない。整理・削除は対象を確認して別途行う。
+Git の履歴だけを頼りにせず、動作確認済みの全ファイル ZIP を保管する。
+
+【管理者が別途記録する項目：公開 ZIP には記入しない】
+・GitHub / Firebase / Google の管理アカウント、復旧手段。
+・Firebase の DB ルールと必要なデータのバックアップ場所。
+・Apps Script プロジェクトとシートの所在、ソース・データのバックアップ場所。
+・GitHub Pages の公開設定と独自ドメインを使う場合の DNS 設定。
+パスワード、秘密鍵、アクセストークンはこのリポジトリや共有 ZIP に入れない。
