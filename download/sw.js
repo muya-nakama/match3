@@ -1,4 +1,4 @@
-const CACHE_NAME = "monpatch-download-2.66.0";
+const CACHE_NAME = "monpatch-download-2.67.0";
 const APP_FILES = [
   "./",
   "./index.html",
@@ -10,6 +10,10 @@ const APP_FILES = [
   "./pwa.js",
   "./version.json",
   "./js/app.js",
+  "./js/player-identity.js",
+  "./js/icon-cropper.js",
+  "./js/icon-cropper.css",
+  "./js/ranking-client.js",
   "./js/bootstrap.js",
   "./js/game-core.js",
   "./js/game-ui.js",
@@ -38,7 +42,7 @@ self.addEventListener("fetch", event => {
     event.respondWith(fetch(event.request));
     return;
   }
-  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
+  event.respondWith(caches.match(event.request, {ignoreSearch:true}).then(cached => cached || fetch(event.request).then(response => {
     if (response.ok) {
       const copy = response.clone();
       caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));

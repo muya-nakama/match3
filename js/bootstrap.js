@@ -1,24 +1,3 @@
-    async function start() {
-      try {
-        firebase.initializeApp(firebaseConfig);
-        onlineStatus.textContent = "接続中…";
-        onlineStatus.className = "value status warn";
-
-        firebase.database().ref(".info/serverTimeOffset").on("value", snap => {
-          serverTimeOffset = Number(snap.val()) || 0;
-        });
-
-        const credential = await firebase.auth().signInAnonymously();
-        const user = credential.user;
-        currentUser = user;
-
-        onlineStatus.textContent = "オンライン";
-        onlineStatus.className = "value status ok";
-        uidEl.textContent = String(user.uid).slice(0, 6) + "…";
-
-        refreshEntryButtons();
-        setMessage("準備完了。名前を確認して、部屋を作るか6桁番号を入力して参加してください。");
-
         battleAvatarInput.addEventListener("change", async () => {
           const file = battleAvatarInput.files && battleAvatarInput.files[0];
           if (!file) return;
@@ -27,6 +6,7 @@
 
           try {
             const dataUrl = await makeAvatarDataUrl(file);
+            if (dataUrl === null) { syncAvatarUI(); return; }
             setLocalAvatar(dataUrl);
             battleAvatarStatus.textContent = "アイコン画像を保存しました";
           } catch (err) {
@@ -57,6 +37,27 @@
         singleModeBtn.addEventListener("click", () => {
           enterSingleMode();
         });
+
+    async function start() {
+      try {
+        firebase.initializeApp(firebaseConfig);
+        onlineStatus.textContent = "接続中…";
+        onlineStatus.className = "value status warn";
+
+        firebase.database().ref(".info/serverTimeOffset").on("value", snap => {
+          serverTimeOffset = Number(snap.val()) || 0;
+        });
+
+        const credential = await firebase.auth().signInAnonymously();
+        const user = credential.user;
+        currentUser = user;
+
+        onlineStatus.textContent = "オンライン";
+        onlineStatus.className = "value status ok";
+        uidEl.textContent = String(user.uid).slice(0, 6) + "…";
+
+        refreshEntryButtons();
+        setMessage("準備完了。名前を確認して、部屋を作るか6桁番号を入力して参加してください。");
 
         createRoomBtn.addEventListener("click", async () => {
           if (!getLocalPlayerName()) {

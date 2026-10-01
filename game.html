@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>モンパッチ v2.66</title>
+<title>モンパッチ v2.67</title>
 <style>
 :root{
  --bg:#10141a; --panel:#1a212b; --text:#f5f7fa; --sub:#aeb8c5;
@@ -1093,7 +1093,14 @@ html,body{
 }
 </style>
 
-</head>
+<style>
+[hidden]{display:none!important}
+.rankPlayer{display:flex;align-items:center;gap:6px;min-width:0}
+.rankPlayerIcon{width:28px;height:28px;object-fit:cover;border-radius:50%;flex:0 0 28px}
+.rankPlayerInitials{display:inline-flex;align-items:center;justify-content:center;background:#394354;color:#fff;font-size:10px}
+#resultRankNameEdit,#playerNameEdit{font-size:11px;padding:6px 9px;margin:6px 0}
+#resultRankSavedName{font-size:13px;padding:6px 0}
+</style></head>
 <body>
 
 <div id="titleScreen" class="titleScreen">
@@ -1265,6 +1272,7 @@ html,body{
    <button class="infoClose" data-close-info type="button">戻る</button>
   </div>
 
+<div class="historyItem"><h3><span class="historyVersion">v2.67</span>アイコン編集・匿名IDランキング</h3><p>正方形トリミング、丸アイコン表示、匿名IDごとの最高点保持を追加。名前入力は初回のみ表示し、変更ボタンから再編集できます。</p></div>
 <div class="historyItem"><h3><span class="historyVersion">v2.66</span>Termux送信確認</h3><p>match3の全ファイルを含む更新用ZIPを作成し、Termuxからのアップロード確認に使えるようにしました。ゲームの得点・操作ルールはv2.65と同じです。</p></div>
 <div class="historyItem"><h3><span class="historyVersion">v2.65</span>氷の1段階解除に加点</h3><p>2段階の氷を1段階にした時に600点を追加。完全除去は800点、鎖解除とミッション達成は各500点、氷トリガー解除は600点です。同じ解除で重複加点はしません。</p></div>
 <div class="historyItem"><h3><span class="historyVersion">v2.64</span>妨害解除判定を修正</h3><p>通常マッチで実際に消えたブロックだけが隣の氷・鎖を解除。特殊効果は妨害ブロック本体に当たった時だけ解除します。</p></div>
@@ -1347,7 +1355,9 @@ html,body{
  </div>
 </div>
 
-<script src="js/game-core.js?v=2.66"></script>
+<script src="js/player-identity.js?v=2.67"></script>
+<script src="js/ranking-client.js?v=2.67"></script>
+<script src="js/game-core.js?v=2.67"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/game-ui.js"></script>
 

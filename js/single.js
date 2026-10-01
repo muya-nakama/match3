@@ -77,6 +77,7 @@
         if (!w || !d) return false;
 
         gameMode = "single";
+        if(typeof w.syncPlayerNameUI === "function")w.syncPlayerNameUI();
         if (gameModeTitle) gameModeTitle.textContent = "モンパッチ シングル";
 
         // 対戦用パッチが残っている場合は元へ戻す。

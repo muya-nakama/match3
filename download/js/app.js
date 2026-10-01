@@ -18,9 +18,13 @@
     const singleProfileFloat = document.getElementById("singleProfileFloat");
     const singleTopBackBtn = document.getElementById("singleTopBackBtn");
 
+    function escapeProfile(value) {
+      return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+    }
     function profileMarkup(){
-      const name = localStorage.getItem("match3_ranking_name") || "Player";
-      const av = localStorage.getItem("match3_profile_avatar") || "";
+      const name = escapeProfile(localStorage.getItem("match3_ranking_name") || "Player");
+      const raw = localStorage.getItem("match3_profile_avatar") || "";
+      const av = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(raw) ? raw : "";
       const initials = Array.from(name).slice(0,2).join("");
       return (av
         ? `<div class="miniProfileAvatar"><img src="${av}" alt=""></div>`

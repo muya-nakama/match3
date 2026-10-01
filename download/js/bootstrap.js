@@ -194,6 +194,7 @@
         battleAvatarStatus.textContent = "画像を処理しています…";
         try {
           const dataUrl = await makeAvatarDataUrl(file);
+          if(dataUrl === null){syncAvatarUI();return;}
           setLocalAvatar(dataUrl);
           battleAvatarStatus.textContent = "アイコン画像を保存しました";
         } catch (err) {

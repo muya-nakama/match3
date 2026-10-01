@@ -64,7 +64,7 @@ function stopBgm(){
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.64";
+const GAME_VERSION="2.67";
 let rankingMinutes=3,rankingInterference=false,rankingJsonpSeq=0;
 
 const titleScreen=document.getElementById("titleScreen");
@@ -390,10 +390,22 @@ function setSavedPlayerName(name){
  const clean=String(name||"").trim().slice(0,16);
  if(clean)localStorage.setItem(PLAYER_NAME_KEY,clean);
  else localStorage.removeItem(PLAYER_NAME_KEY);
+ try { if(parent !== window)parent.dispatchEvent(new Event("monpatch-profile-changed")); } catch(e) {}
  return clean;
 }
 function syncPlayerNameUI(){
- if(playerNameInput)playerNameInput.value=getSavedPlayerName();
+ const saved=getSavedPlayerName();
+ if(playerNameInput){
+  playerNameInput.value=saved;playerNameInput.hidden=!!saved;
+  if(playerNameSave)playerNameSave.hidden=!!saved;
+  let edit=document.getElementById("playerNameEdit");
+  if(!edit){
+   edit=document.createElement("button");edit.id="playerNameEdit";edit.textContent="名前を変更";
+   playerNameInput.parentElement.appendChild(edit);
+   edit.addEventListener("click",()=>{playerNameInput.hidden=false;if(playerNameSave)playerNameSave.hidden=false;edit.hidden=true;playerNameInput.focus();});
+  }
+  edit.hidden=!saved;
+ }
 }
 function savePlayerNameFromTitle(){
  const clean=setSavedPlayerName(playerNameInput?.value||"");
@@ -401,6 +413,8 @@ function savePlayerNameFromTitle(){
   playerNameStatus.textContent=clean?`「${clean}」で保存しました`:"プレイヤーネームを未設定にしました";
  }
  if(resultRankName)resultRankName.value=clean;
+ syncPlayerNameUI();
+ syncResultNameUI();
 }
 playerNameSave?.addEventListener("click",()=>{
  playDecision();
@@ -445,7 +459,7 @@ function loadRanking(minutes=rankingMinutes,interference=rankingInterference){
   if(!data?.ok){rankingStatus.textContent="取得エラー";clean();return}
   const rows=Array.isArray(data.ranking)?data.ranking:[];
   rankingStatus.textContent=`${requestedMinutes}分・妨害${requestedInterference?"あり":"なし"}`;
-  rankingBody.innerHTML=rows.length?rows.map(r=>`<tr><td class="rankingRank">${Number(r.rank)||""}</td><td>${escapeRank(r.name)}</td><td class="rankInterference">${requestedInterference?`${formatAttackCount(r.chainAttacks,"🔗")}<br>${formatAttackCount(r.iceAttacks,"🧊")}`:"—"}</td><td>${Number(r.score||0).toLocaleString("ja-JP")}</td></tr>`).join(""):'<tr><td colspan="4" class="rankingEmpty">まだ記録がありません</td></tr>';
+  rankingBody.innerHTML=rows.length?rows.map(r=>`<tr><td class="rankingRank">${Number(r.rank)||""}</td><td><span class="rankPlayer">${window.MonpatchRanking.avatarMarkup(r.avatarData,r.name)}<span>${escapeRank(r.name)}</span></span></td><td class="rankInterference">${requestedInterference?`${formatAttackCount(r.chainAttacks,"🔗")}<br>${formatAttackCount(r.iceAttacks,"🧊")}`:"—"}</td><td>${Number(r.score||0).toLocaleString("ja-JP")}</td></tr>`).join(""):'<tr><td colspan="4" class="rankingEmpty">まだ記録がありません</td></tr>';
   clean();
  };
  s.onerror=()=>{clearTimeout(timer);if(requestedMinutes===rankingMinutes&&requestedInterference===rankingInterference)rankingStatus.textContent="通信エラー";clean()};
@@ -463,42 +477,44 @@ function prepareResultRanking(){
  resultRankingBox.style.display="";
  if(resultRankingTitle)resultRankingTitle.textContent=`ランキングに登録（妨害${interferenceEnabled?"あり":"なし"}）`;
  resultRankStatus.textContent="";
- resultRankName.value=getSavedPlayerName();
+ syncResultNameUI();
  resultRankSubmit.disabled=false;
 }
-function submitScoreToRanking(){
- if(testerMode)return;
+function syncResultNameUI(){
+ const saved=getSavedPlayerName();
+ resultRankName.value=saved;resultRankName.hidden=!!saved;
+ let label=document.getElementById("resultRankSavedName"),edit=document.getElementById("resultRankNameEdit");
+ if(!label){
+  label=document.createElement("div");label.id="resultRankSavedName";
+  edit=document.createElement("button");edit.id="resultRankNameEdit";edit.textContent="名前を変更";
+  resultRankName.parentElement.before(label);resultRankName.parentElement.after(edit);
+  edit.addEventListener("click",()=>{resultRankName.hidden=false;edit.hidden=true;resultRankName.focus();});
+ }
+ label.textContent=saved?("登録名："+saved):"";label.hidden=!saved;edit.hidden=!saved;
+}
+async function submitScoreToRanking(){
+ if(testerMode || resultRankSubmit.disabled)return;
  const name=(resultRankName.value||"").trim().slice(0,16);
  if(!name){resultRankStatus.textContent="名前を入力してください";return}
- setSavedPlayerName(name); syncPlayerNameUI();
+ setSavedPlayerName(name);syncPlayerNameUI();syncResultNameUI();
  resultRankSubmit.disabled=true;resultRankStatus.textContent="送信中...";
- const submittedScore=Math.floor(score);
- const submittedInterference=interferenceEnabled;
- const cb=`__match3Submit${Date.now()}_${++rankingJsonpSeq}`,s=document.createElement("script");
- let finished=false;
- const clean=()=>{if(finished)return;finished=true;try{delete window[cb]}catch(e){}s.remove()};
- const failed=message=>{resultRankStatus.textContent=message;resultRankSubmit.disabled=false;clean()};
- const timer=setTimeout(()=>{if(!finished)failed("登録結果を確認できませんでした\n通信を確認して、もう一度お試しください")},10000);
- window[cb]=data=>{
-  clearTimeout(timer);
-  if(!data?.ok){failed("登録できませんでした");return}
+ const submittedScore=Math.floor(score),submittedInterference=interferenceEnabled;
+ try{
+  const data=await window.MonpatchRanking.submit(RANKING_API_URL,{
+   action:"submit",name,score:String(submittedScore),minutes:String(selectedMinutes),
+   interference:submittedInterference?"1":"0",
+   chainAttacks:String(submittedInterference?chainAttackCount:0),
+   iceAttacks:String(submittedInterference?iceAttackCount:0),version:GAME_VERSION
+  });
   const best=Number(data.bestScore||0).toLocaleString("ja-JP");
-  const submitted=Number(data.submittedScore||submittedScore).toLocaleString("ja-JP");
-  const rank=Number(data.rank)>0?`\n現在の順位：${Number(data.rank)}位`:"";
-  if(data.result==="updated"){
-   const previous=Number(data.previousScore||0).toLocaleString("ja-JP");
-   resultRankStatus.textContent=`🎉 高得点を更新しました！\n${previous}点 → ${best}点${rank}`;
-  }else if(data.result==="kept"){
-   resultRankStatus.textContent=`高得点を維持しました\n現在：${best}点／今回：${submitted}点${rank}`;
-  }else{
-   resultRankStatus.textContent=`ランキングに登録しました！\nスコア：${best}点${rank}`;
-  }
-  clean();
- };
- s.onerror=()=>{clearTimeout(timer);failed("登録できませんでした")};
- const query=new URLSearchParams({action:"submit",name,score:String(submittedScore),minutes:String(selectedMinutes),interference:submittedInterference?"1":"0",chainAttacks:String(submittedInterference?chainAttackCount:0),iceAttacks:String(submittedInterference?iceAttackCount:0),version:GAME_VERSION,callback:cb,_:String(Date.now())});
- s.src=`${RANKING_API_URL}?${query.toString()}`;
- document.body.appendChild(s);
+  const rank=Number(data.rank)>0?"\n現在の順位："+Number(data.rank)+"位":"";
+  if(data.result==="updated")resultRankStatus.textContent="🎉 高得点を更新しました！\n"+Number(data.previousScore||0).toLocaleString("ja-JP")+"点 → "+best+"点"+rank;
+  else if(data.result==="kept")resultRankStatus.textContent="高得点を維持しました\n現在："+best+"点／今回："+submittedScore.toLocaleString("ja-JP")+"点"+rank;
+  else resultRankStatus.textContent="ランキングに登録しました！\nスコア："+best+"点"+rank;
+ }catch(e){
+  resultRankStatus.textContent=e.message||"登録できませんでした";
+  resultRankSubmit.disabled=false;
+ }
 }
 resultRankSubmit?.addEventListener("click",()=>{playDecision();submitScoreToRanking()});
 

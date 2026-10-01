@@ -756,13 +756,15 @@ body{
 }
 </style>
 
+<link rel="stylesheet" href="js/icon-cropper.css?v=2.67">
+<style>[hidden]{display:none!important}.profileNameEdit{margin-top:8px!important;font-size:12px!important;padding:8px 12px!important}</style>
 </head>
 <body>
   <main class="app">
     <section id="topPage" class="pageView active">
       <section class="card">
       <h1>モンパッチ</h1>
-      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.66</div>
+      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.67</div>
       <div class="sub">
         シングルモードとオンライン対戦モードが遊べるマッチパズル。
       </div>
@@ -776,10 +778,11 @@ body{
 
       <div class="playerNameSetup">
         <div class="playerNameSetupLabel">プレイヤーネーム</div>
-        <div class="playerNameSetupRow">
+        <div id="profileNameEditor" class="playerNameSetupRow">
           <input id="battlePlayerNameInput" class="playerNameSetupInput" maxlength="16" autocomplete="nickname" placeholder="名前を入力">
           <button id="battlePlayerNameSave" class="playerNameSetupSave" type="button">保存</button>
         </div>
+        <button id="profileNameEdit" class="profileNameEdit" type="button" hidden>名前を変更</button>
         <div id="battlePlayerNameStatus" class="playerNameSetupStatus"></div>
       </div>
 
@@ -788,11 +791,12 @@ body{
         <div class="avatarSetupRow">
           <div id="battleAvatarPreview" class="avatarPreview">未設定</div>
           <div class="avatarSetupActions">
-            <input id="battleAvatarInput" class="avatarFileInput" type="file" accept="image/*">
+            <input id="battleAvatarInput" class="avatarFileInput" type="file" accept="image/jpeg,image/png,image/webp">
             <button id="battleAvatarRemove" class="avatarRemoveBtn" type="button">画像を解除</button>
           </div>
         </div>
         <div id="battleAvatarStatus" class="avatarStatus">未設定時は名前の先頭2文字を表示します</div>
+        <div class="avatarStatus">ランキング登録時に名前・アイコン・匿名IDを送信します。</div>
       </div>
 
       <div class="modeChoice">
@@ -895,10 +899,12 @@ body{
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/profile.js"></script>
+  <script src="js/player-identity.js?v=2.67"></script>
+  <script src="js/icon-cropper.js?v=2.67"></script>
+  <script src="js/app.js?v=2.67"></script>
+  <script src="js/profile.js?v=2.67"></script>
   <script src="js/multi.js"></script>
   <script src="js/single.js"></script>
-  <script src="js/bootstrap.js"></script>
+  <script src="js/bootstrap.js?v=2.67"></script>
 </body>
 </html>
