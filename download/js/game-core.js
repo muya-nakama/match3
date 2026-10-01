@@ -64,7 +64,7 @@ function stopBgm(){
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.67";
+const GAME_VERSION="2.68";
 let rankingMinutes=3,rankingInterference=false,rankingJsonpSeq=0;
 
 const titleScreen=document.getElementById("titleScreen");
@@ -442,30 +442,36 @@ function formatAttackCount(value,mark){
  const n=Number(value);
  return `${mark}×${Number.isFinite(n)?Math.max(0,Math.floor(n)):"—"}`;
 }
-function loadRanking(minutes=rankingMinutes,interference=rankingInterference){
+let rankingLoadToken=0,legacyRankingPromise;
+async function loadRanking(minutes=rankingMinutes,interference=rankingInterference){
  rankingMinutes=Number(minutes)||3;
  rankingInterference=Boolean(interference);
- const requestedMinutes=rankingMinutes,requestedInterference=rankingInterference;
- document.querySelectorAll(".rankingDurationBtn").forEach(b=>b.classList.toggle("selected",Number(b.dataset.rankMin)===rankingMinutes));
- document.querySelectorAll(".rankingModeBtn").forEach(b=>b.classList.toggle("selected",(b.dataset.rankInterference==="1")===rankingInterference));
+ const token=++rankingLoadToken,m=rankingMinutes,mode=rankingInterference;
+ const legacy=document.getElementById("rankingGeneration").value==="legacy";
+ document.querySelectorAll(".rankingDurationBtn").forEach(b=>b.classList.toggle("selected",Number(b.dataset.rankMin)===m));
+ document.querySelectorAll(".rankingModeBtn").forEach(b=>b.classList.toggle("selected",(b.dataset.rankInterference==="1")===mode));
  rankingStatus.textContent="読み込み中...";rankingBody.innerHTML="";
- const cb=`__match3Rank${Date.now()}_${++rankingJsonpSeq}`,s=document.createElement("script");
- let finished=false;
- const clean=()=>{if(finished)return;finished=true;try{delete window[cb]}catch(e){}s.remove()};
- const timer=setTimeout(()=>{if(finished)return;if(requestedMinutes!==rankingMinutes||requestedInterference!==rankingInterference){clean();return}rankingStatus.textContent="取得できませんでした";rankingBody.innerHTML='<tr><td colspan="4" class="rankingEmpty">通信を確認してください</td></tr>';clean()},7000);
- window[cb]=data=>{
-  clearTimeout(timer);
-  if(requestedMinutes!==rankingMinutes||requestedInterference!==rankingInterference){clean();return}
-  if(!data?.ok){rankingStatus.textContent="取得エラー";clean();return}
-  const rows=Array.isArray(data.ranking)?data.ranking:[];
-  rankingStatus.textContent=`${requestedMinutes}分・妨害${requestedInterference?"あり":"なし"}`;
-  rankingBody.innerHTML=rows.length?rows.map(r=>`<tr><td class="rankingRank">${Number(r.rank)||""}</td><td><span class="rankPlayer">${window.MonpatchRanking.avatarMarkup(r.avatarData,r.name)}<span>${escapeRank(r.name)}</span></span></td><td class="rankInterference">${requestedInterference?`${formatAttackCount(r.chainAttacks,"🔗")}<br>${formatAttackCount(r.iceAttacks,"🧊")}`:"—"}</td><td>${Number(r.score||0).toLocaleString("ja-JP")}</td></tr>`).join(""):'<tr><td colspan="4" class="rankingEmpty">まだ記録がありません</td></tr>';
-  clean();
- };
- s.onerror=()=>{clearTimeout(timer);if(requestedMinutes===rankingMinutes&&requestedInterference===rankingInterference)rankingStatus.textContent="通信エラー";clean()};
- s.src=`${RANKING_API_URL}?minutes=${requestedMinutes}&interference=${requestedInterference?1:0}&callback=${encodeURIComponent(cb)}&_=${Date.now()}`;
- document.body.appendChild(s);
+ try{
+  let rows;
+  if(legacy){
+   if(!legacyRankingPromise)legacyRankingPromise=fetch("data/ranking-legacy.json").then(r=>{if(!r.ok)throw new Error("archive");return r.json()}).catch(e=>{legacyRankingPromise=null;throw e});
+   const archive=await legacyRankingPromise;
+   rows=archive.ranking.filter(r=>Number(r.minutes)===m&&r.interference===mode).sort((a,b)=>b.score-a.score).map((r,i)=>({...r,rank:i+1}));
+  }else{
+   const data=await window.MonpatchRanking.read(RANKING_API_URL,{minutes:m,interference:mode?1:0});
+   if(!data.ok)throw new Error("ranking");
+   rows=Array.isArray(data.ranking)?data.ranking:[];
+  }
+  if(token!==rankingLoadToken)return;
+  rankingStatus.textContent=`${m}分・妨害${mode?"あり":"なし"}${legacy?"・旧記録（閲覧専用）":""}`;
+  rankingBody.innerHTML=rows.length?rows.slice(0,20).map(r=>`<tr><td class="rankingRank">${Number(r.rank)||""}</td><td><span class="rankPlayer">${window.MonpatchRanking.avatarMarkup(r.avatarData,r.name)}<span>${escapeRank(r.name)}${legacy?`<small class="rankRecordVersion">v${escapeRank(r.version)}</small>`:""}</span></span></td><td class="rankInterference">${mode?`${formatAttackCount(r.chainAttacks,"🔗")}<br>${formatAttackCount(r.iceAttacks,"🧊")}`:"—"}</td><td>${Number(r.score||0).toLocaleString("ja-JP")}</td></tr>`).join(""):'<tr><td colspan="4" class="rankingEmpty">まだ記録がありません</td></tr>';
+ }catch(e){
+  if(token!==rankingLoadToken)return;
+  rankingStatus.textContent="取得できませんでした";
+  rankingBody.innerHTML='<tr><td colspan="4" class="rankingEmpty">通信を確認して再選択してください</td></tr>';
+ }
 }
+document.getElementById("rankingGeneration").addEventListener("change",()=>loadRanking());
 function openRanking(m=selectedMinutes||3,interference=interferenceEnabled){rankingOverlay.classList.add("show");rankingOverlay.setAttribute("aria-hidden","false");loadRanking(m,interference)}
 function closeRanking(){rankingOverlay.classList.remove("show");rankingOverlay.setAttribute("aria-hidden","true")}
 rankingTitleBtn?.addEventListener("click",()=>{playDecision();openRanking(selectedMinutes||3,interferenceEnabled)});

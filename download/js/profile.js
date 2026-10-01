@@ -42,10 +42,11 @@
     function syncBattlePlayerNameUI() {
       const saved = getLocalPlayerName();
       battlePlayerNameInput.value = saved;
+      battlePlayerNameInput.closest(".playerNameSetup").classList.toggle("hasSavedName", !!saved);
       document.getElementById("profileNameEditor").hidden = !!saved;
       document.getElementById("profileNameEdit").hidden = !saved;
       battlePlayerNameStatus.textContent = saved
-        ? `保存済み: ${saved}`
+        ? saved
         : "プレイヤーネームを入力してください";
       refreshEntryButtons();
     }
@@ -54,9 +55,8 @@
       const hasName = !!getLocalPlayerName();
       const authReady = !!currentUser;
       const gameReady = !!battleFrameReady;
-      const onlineAllowed = window.__monpatchOnlineAllowed === true;
-      createRoomBtn.disabled = !(hasName && authReady && gameReady && onlineAllowed);
-      joinRoomBtn.disabled = !(hasName && authReady && gameReady && onlineAllowed);
+      createRoomBtn.disabled = !(hasName && authReady && gameReady);
+      joinRoomBtn.disabled = !(hasName && authReady && gameReady);
     }
 
     function saveBattlePlayerName() {
@@ -82,6 +82,7 @@
     }
 
     document.getElementById("profileNameEdit")?.addEventListener("click", () => {
+      battlePlayerNameInput.closest(".playerNameSetup").classList.remove("hasSavedName");
       document.getElementById("profileNameEditor").hidden = false;
       document.getElementById("profileNameEdit").hidden = true;
       battlePlayerNameInput.focus();

@@ -1,4 +1,4 @@
-const CACHE_NAME = "monpatch-download-2.67.0";
+const CACHE_NAME = "monpatch-download-2.68.0";
 const APP_FILES = [
   "./",
   "./index.html",

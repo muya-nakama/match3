@@ -42,10 +42,11 @@
     function syncBattlePlayerNameUI() {
       const saved = getLocalPlayerName();
       battlePlayerNameInput.value = saved;
+      battlePlayerNameInput.closest(".playerNameSetup").classList.toggle("hasSavedName", !!saved);
       document.getElementById("profileNameEditor").hidden = !!saved;
       document.getElementById("profileNameEdit").hidden = !saved;
       battlePlayerNameStatus.textContent = saved
-        ? `保存済み: ${saved}`
+        ? saved
         : "プレイヤーネームを入力してください";
       refreshEntryButtons();
     }
@@ -81,6 +82,7 @@
     }
 
     document.getElementById("profileNameEdit")?.addEventListener("click", () => {
+      battlePlayerNameInput.closest(".playerNameSetup").classList.remove("hasSavedName");
       document.getElementById("profileNameEditor").hidden = false;
       document.getElementById("profileNameEdit").hidden = true;
       battlePlayerNameInput.focus();

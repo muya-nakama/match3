@@ -12,6 +12,7 @@
     });
   }
   window.MonpatchRanking = {
+    read: request,
     async submit(api,payload) {
       const playerId=window.MonpatchIdentity.getId();
       const requestId='r_'+crypto.randomUUID().replace(/-/g,'');

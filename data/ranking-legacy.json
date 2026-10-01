@@ -1,0 +1,96 @@
+{
+  "label": "旧ランキング（v2.66以前）",
+  "snapshotDate": "2026-10-01",
+  "ranking": [
+    {
+      "name": "仲間六夜",
+      "score": 144650,
+      "minutes": 3,
+      "version": "2.64",
+      "interference": false,
+      "chainAttacks": 0,
+      "iceAttacks": 0
+    },
+    {
+      "name": "ﾈｯｼｨ",
+      "score": 104610,
+      "minutes": 3,
+      "version": "2.63",
+      "interference": false,
+      "chainAttacks": 0,
+      "iceAttacks": 0
+    },
+    {
+      "name": "寝太郎",
+      "score": 123675,
+      "minutes": 3,
+      "version": "2.62",
+      "interference": false,
+      "chainAttacks": 0,
+      "iceAttacks": 0
+    },
+    {
+      "name": "寝太郎",
+      "score": 111375,
+      "minutes": 3,
+      "version": "2.62",
+      "interference": true,
+      "chainAttacks": 13,
+      "iceAttacks": 16
+    },
+    {
+      "name": "ペンギンストーカー",
+      "score": 154150,
+      "minutes": 3,
+      "version": "2.62",
+      "interference": false,
+      "chainAttacks": 0,
+      "iceAttacks": 0
+    },
+    {
+      "name": "ペンギンストーカー",
+      "score": 172130,
+      "minutes": 3,
+      "version": "2.64",
+      "interference": true,
+      "chainAttacks": 15,
+      "iceAttacks": 32
+    },
+    {
+      "name": "仲間六夜",
+      "score": 178200,
+      "minutes": 3,
+      "version": "2.64",
+      "interference": true,
+      "chainAttacks": 16,
+      "iceAttacks": 29
+    },
+    {
+      "name": "あけぽよ",
+      "score": 122020,
+      "minutes": 3,
+      "version": "2.64",
+      "interference": false,
+      "chainAttacks": 0,
+      "iceAttacks": 0
+    },
+    {
+      "name": "あけもん",
+      "score": 139310,
+      "minutes": 3,
+      "version": "2.64",
+      "interference": true,
+      "chainAttacks": 14,
+      "iceAttacks": 24
+    },
+    {
+      "name": "おさとう",
+      "score": 144290,
+      "minutes": 3,
+      "version": "2.64",
+      "interference": true,
+      "chainAttacks": 14,
+      "iceAttacks": 26
+    }
+  ]
+}

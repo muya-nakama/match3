@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>モンパッチ v2.67</title>
+<title>モンパッチ v2.68</title>
 <style>
 :root{
  --bg:#10141a; --panel:#1a212b; --text:#f5f7fa; --sub:#aeb8c5;
@@ -707,7 +707,10 @@ body{
 .rankingRank{font-weight:1000;color:#ffe98c}.rankingEmpty{text-align:center!important;color:#8292a5;padding:18px 6px!important}
 .resultRankingBox{margin:12px 0 4px;padding:11px;border-radius:14px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09)}
 .resultRankingTitle{font-size:12px;font-weight:900;color:#c9d6e5;margin-bottom:7px}
-.resultRankRow{display:flex;gap:7px}
+.resultRankRow{display:flex;flex-direction:column;align-items:center;gap:10px}
+.resultRankRow .resultRankName{width:100%;box-sizing:border-box;flex:auto}
+.rankingGeneration{display:block;width:100%;margin:12px 0;padding:10px;border-radius:9px;background:#273343;color:#dfe9f4;border:1px solid #526077}
+.rankRecordVersion{display:block;font-size:10px;color:#9ba9ba;margin-top:3px}
 .resultRankName{min-width:0;flex:1;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:#0f1724;color:#fff;padding:9px}
 .resultRankSubmit{background:#ff78ba;color:#fff;padding:9px 11px}
 .resultRankStatus{min-height:18px;margin-top:6px;font-size:11px;line-height:1.55;white-space:pre-line;color:#a8b7c9}
@@ -1203,6 +1206,7 @@ html,body{
 <div id="rankingOverlay" class="rankingOverlay" aria-hidden="true">
  <div class="rankingPanel">
   <div class="rankingHeader"><div class="rankingTitle">ランキング TOP 20</div><button id="rankingCloseBtn" class="rankingClose">閉じる</button></div>
+  <select id="rankingGeneration" class="rankingGeneration" aria-label="ランキングの世代"><option value="current">現在（v2.67以降）</option><option value="legacy">旧ランキング（v2.66以前）</option></select>
   <div class="rankingDurationGrid"><button class="rankingDurationBtn" data-rank-min="1">1分</button><button class="rankingDurationBtn" data-rank-min="2">2分</button><button class="rankingDurationBtn selected" data-rank-min="3">3分</button><button class="rankingDurationBtn" data-rank-min="4">4分</button><button class="rankingDurationBtn" data-rank-min="5">5分</button><button class="rankingDurationBtn" data-rank-min="6">6分</button><button class="rankingDurationBtn" data-rank-min="7">7分</button><button class="rankingDurationBtn" data-rank-min="8">8分</button><button class="rankingDurationBtn" data-rank-min="9">9分</button><button class="rankingDurationBtn" data-rank-min="10">10分</button></div>
   <div class="rankingModeGrid"><button class="rankingModeBtn selected" data-rank-interference="0">妨害なし</button><button class="rankingModeBtn" data-rank-interference="1">妨害あり</button></div>
   <div id="rankingStatus" class="rankingStatus">読み込み待ち</div>
@@ -1272,6 +1276,7 @@ html,body{
    <button class="infoClose" data-close-info type="button">戻る</button>
   </div>
 
+<div class="historyItem"><h3><span class="historyVersion">v2.68</span>表示調整・旧ランキング</h3><p>保存済みの名前欄を縮小し、登録ボタンを中央に配置。旧ランキングを静的データで閲覧できます。</p></div>
 <div class="historyItem"><h3><span class="historyVersion">v2.67</span>アイコン編集・匿名IDランキング</h3><p>正方形トリミング、丸アイコン表示、匿名IDごとの最高点保持を追加。名前入力は初回のみ表示し、変更ボタンから再編集できます。</p></div>
 <div class="historyItem"><h3><span class="historyVersion">v2.66</span>Termux送信確認</h3><p>match3の全ファイルを含む更新用ZIPを作成し、Termuxからのアップロード確認に使えるようにしました。ゲームの得点・操作ルールはv2.65と同じです。</p></div>
 <div class="historyItem"><h3><span class="historyVersion">v2.65</span>氷の1段階解除に加点</h3><p>2段階の氷を1段階にした時に600点を追加。完全除去は800点、鎖解除とミッション達成は各500点、氷トリガー解除は600点です。同じ解除で重複加点はしません。</p></div>
@@ -1355,9 +1360,9 @@ html,body{
  </div>
 </div>
 
-<script src="js/player-identity.js?v=2.67"></script>
-<script src="js/ranking-client.js?v=2.67"></script>
-<script src="js/game-core.js?v=2.67"></script>
+<script src="js/player-identity.js?v=2.68"></script>
+<script src="js/ranking-client.js?v=2.68"></script>
+<script src="js/game-core.js?v=2.68"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/game-ui.js"></script>
 
