@@ -756,12 +756,25 @@ body{
 }
 </style>
 
-<link rel="stylesheet" href="js/icon-cropper.css?v=2.68">
+<link rel="stylesheet" href="js/icon-cropper.css?v=2.68.2">
 <style>[hidden]{display:none!important}.profileNameEdit{margin-top:8px!important;font-size:12px!important;padding:8px 12px!important}
 .playerNameSetup.hasSavedName{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin:10px 0 12px}
 .hasSavedName .playerNameSetupLabel{display:none}
 .hasSavedName .playerNameSetupStatus{margin:0;min-height:0;color:#dfe9f4;font-size:14px;overflow-wrap:anywhere;order:-1}
 .hasSavedName .profileNameEdit{margin:0!important;flex-shrink:0}
+</style>
+<style>
+.environmentDialog{width:min(440px,calc(100% - 32px));max-height:85vh;overflow:auto;background:var(--panel);color:var(--text);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:20px;}
+.environmentDialog::backdrop{background:rgba(0,0,0,.72)}
+.environmentDialog h2{margin:0 0 16px;font-size:21px}
+.environmentSoundRow{margin:20px 0}
+.environmentSoundRow>label{display:block;margin-bottom:10px;font-weight:700}
+.soundLine{display:grid;grid-template-columns:48px minmax(0,1fr) 74px;gap:10px;align-items:center}
+.soundLine input[type=range]{width:100%;min-width:0;height:44px;accent-color:#62d394}
+.soundIcon{width:48px;height:48px;margin:0;padding:0;font-size:23px;background:#29384b;color:#fff}
+.soundValueWrap{display:flex;align-items:center;gap:3px}
+.soundNumber{width:54px;height:44px;border:1px solid #526174;border-radius:9px;background:#101720;color:#fff;text-align:center;font-size:17px}
+.environmentNote{font-size:13px;line-height:1.7;color:var(--sub)}
 </style>
 </head>
 <body>
@@ -769,7 +782,7 @@ body{
     <section id="topPage" class="pageView active">
       <section class="card">
       <h1>モンパッチ</h1>
-      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.68</div>
+      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.68.2</div>
       <div class="sub">
         シングルモードとオンライン対戦モードが遊べるマッチパズル。
       </div>
@@ -807,6 +820,7 @@ body{
       <div class="modeChoice">
         <button id="singleModeBtn" type="button">シングルモード</button>
         <button id="multiModeBtn" type="button">マルチ対戦</button>
+        <button id="environmentBtn" type="button">⚙ 環境設定</button>
       </div>
       <a class="pwaLink" href="download/">ホーム画面に追加できるPWA版はこちら</a>
       <div class="topFanmade">非公式・ファンメイド</div>
@@ -901,15 +915,24 @@ body{
   </div>
 
   <!-- Firebase SDK（互換版。単体HTMLで扱いやすい方式） -->
+<dialog id="environmentDialog" class="environmentDialog" aria-labelledby="environmentTitle">
+ <h2 id="environmentTitle">環境設定</h2>
+ <div class="environmentSoundRow"><label for="bgmRange">BGM</label><div class="soundLine"><button id="bgmMute" class="soundIcon" type="button" aria-label="BGM ミュート" aria-pressed="false">🔊</button><input id="bgmRange" type="range" min="0" max="100" step="1" aria-label="BGM音量"><div class="soundValueWrap"><input id="bgmNumber" class="soundNumber" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" aria-label="BGM音量（％）"><span>%</span></div></div></div>
+ <div class="environmentSoundRow"><label for="seRange">SE</label><div class="soundLine"><button id="seMute" class="soundIcon" type="button" aria-label="SE ミュート" aria-pressed="false">🔊</button><input id="seRange" type="range" min="0" max="100" step="1" aria-label="SE音量"><div class="soundValueWrap"><input id="seNumber" class="soundNumber" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" aria-label="SE音量（％）"><span>%</span></div></div></div>
+ <p class="environmentNote">変更は自動保存され、シングル・マルチの両方に反映されます。</p>
+ <button id="environmentClose" type="button">閉じる</button>
+</dialog>
+  <script src="js/audio-settings.js?v=2.68.2"></script>
+  <script src="js/environment.js?v=2.68.2"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script src="js/player-identity.js?v=2.68"></script>
-  <script src="js/icon-cropper.js?v=2.68"></script>
-  <script src="js/app.js?v=2.68"></script>
-  <script src="js/profile.js?v=2.68"></script>
+  <script src="js/player-identity.js?v=2.68.2"></script>
+  <script src="js/icon-cropper.js?v=2.68.2"></script>
+  <script src="js/app.js?v=2.68.2"></script>
+  <script src="js/profile.js?v=2.68.2"></script>
   <script src="js/multi.js"></script>
-  <script src="js/single.js?v=2.68.1"></script>
-  <script src="js/bootstrap.js?v=2.68"></script>
+  <script src="js/single.js?v=2.68.2"></script>
+  <script src="js/bootstrap.js?v=2.68.2"></script>
 </body>
 </html>
