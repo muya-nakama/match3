@@ -208,8 +208,8 @@ function chatSend_(p, uid) {
     const playerId = /^[a-zA-Z0-9_-]{20,80}$/.test(String(room.players[uid].playerId || '')) ? String(room.players[uid].playerId) : '';
     const last = logs.getLastRow();
     let header = 0;
-    if (last <= 1 || String(logs.getRange(last, 1).getValue()) !== date) {
-      if (last > 2) { const group = logs.getRowGroup(last, 1); if (group) group.collapse(); }
+    if (last <= 1 || chatDate_(logs.getRange(last, 1).getValue()) !== date) {
+      if (last > 2) { const group = chatGroup_(logs, last); if (group) group.collapse(); }
       logs.appendRow([date, '', '', '', '', '', '▼ この日の発言', '', '', '']);
       logs.getRange(logs.getLastRow(), 1, 1, 10).setBackground('#eeeeee').setFontWeight('bold');
       header = logs.getLastRow();
@@ -224,20 +224,20 @@ function chatSend_(p, uid) {
       try { saved = JSON.parse(props.getProperty('CHAT_DAY_HEADER') || 'null'); } catch (_) {}
       if (saved && saved.date === date && Number.isInteger(saved.row) && saved.row >= 2 && saved.row < row) {
         const h = logs.getRange(saved.row, 1, 1, 8).getValues()[0];
-        if (String(h[0]) === date && !h[3] && !h[7]) header = saved.row;
+        if (chatDate_(h[0]) === date && !h[3] && !h[7]) header = saved.row;
       }
       // Recover once after installation or a manual sheet edit, rather than rereading history per send.
       if (!header) {
         const todayRows = logs.getRange(2, 1, row - 1, 8).getValues();
         header = 2;
         for (let i = todayRows.length - 1; i >= 0; i--) {
-          if (String(todayRows[i][0]) === date && !todayRows[i][3] && !todayRows[i][7]) { header = i + 2; break; }
+          if (chatDate_(todayRows[i][0]) === date && !todayRows[i][3] && !todayRows[i][7]) { header = i + 2; break; }
         }
       }
     }
     props.setProperty('CHAT_DAY_HEADER', JSON.stringify({ date, row: header }));
     if (row > header + 1) {
-      const currentGroup = logs.getRowGroup(header + 1, 1);
+      const currentGroup = chatGroup_(logs, header + 1);
       if (currentGroup) currentGroup.remove();
     }
     logs.getRange(header + 1, 1, row - header, 9).shiftRowGroupDepth(1);
@@ -249,6 +249,8 @@ function chatSend_(p, uid) {
   firebaseAdmin_('roomChats/' + roomCode + '/' + p.requestId, 'put', message);
   return { ok: true, chatProtocol: 1, messageId: p.requestId };
 }
+function chatDate_(value) { return value instanceof Date ? Utilities.formatDate(value, 'Asia/Tokyo', 'yyyy-MM-dd') : String(value); }
+function chatGroup_(sheet, row) { try { return sheet.getRowGroup(row, 1); } catch (_) { return null; } }
 function untext_(v) { return String(v || '').replace(/^'/, ''); }
 // Runs independently of players' browsers. Queue entries survive room deletion and blocking.
 function archiveMonpatchChat() {
@@ -273,18 +275,18 @@ function archiveMonpatchChat() {
         let header = groups.get(date)?.header;
         if (!header) {
           const end = logs.getLastRow();
-          if (end > 1 && String(logs.getRange(end, 1).getValue()) === date) {
+          if (end > 1 && chatDate_(logs.getRange(end, 1).getValue()) === date) {
             const all = logs.getRange(2, 1, end - 1, 8).getValues();
-            for (let i = all.length - 1; i >= 0; i--) if (String(all[i][0]) === date && !all[i][3] && !all[i][7]) { header = i + 2; break; }
+            for (let i = all.length - 1; i >= 0; i--) if (chatDate_(all[i][0]) === date && !all[i][3] && !all[i][7]) { header = i + 2; break; }
           }
           if (!header) {
-            if (end > 2) { const old = logs.getRowGroup(end, 1); if (old) old.collapse(); }
+            if (end > 2) { const old = chatGroup_(logs, end); if (old) old.collapse(); }
             logs.appendRow([date, '', '', '', '', '', '▼ この日の発言', '', '', '']);
             header = logs.getLastRow();
             logs.getRange(header, 1, 1, 10).setBackground('#eeeeee').setFontWeight('bold');
           }
           groups.set(date, { header, end: header });
-          const old = logs.getRowGroup(header + 1, 1); if (old) old.remove();
+          const old = chatGroup_(logs, header + 1); if (old) old.remove();
         }
         const row = [date, time, room, m.uid, m.playerId || '', "'" + m.name, "'" + m.text, id, String(m.session), Number(m.createdAt)];
         logs.appendRow(row); saved.set(key, row); groups.get(date).end = logs.getLastRow();
