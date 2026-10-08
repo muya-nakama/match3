@@ -1,7 +1,6 @@
-/* Chat 2.69: archive through Apps Script, receive through Firebase. */
+/* Chat async: Firebase delivery first, server-side batch archiving. */
 (() => {
   'use strict';
-  const API = 'https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec';
   const box = document.getElementById('roomChat');
   const list = document.getElementById('roomChatMessages');
   const form = document.getElementById('roomChatForm');
@@ -10,45 +9,46 @@
   const status = document.getElementById('roomChatStatus');
   let ref = null, code = '', generation = 0, session = '', active = false;
   let blocked = false, banRef = null, sending = false, pending = null;
+  let visibleIds = new Set(), archivedMessages = null, queuedMessages = null, queueRef = null;
+  function showPending() {
+    list.querySelector('.chatPending')?.remove();
+    if (!sending || !pending || visibleIds.has(pending.requestId)) return;
+    const row = document.createElement('div'); row.className = 'chatMessage chatPending';
+    const meta = document.createElement('div'); meta.className = 'chatMeta'; meta.textContent = '自分 ・ 送信中…';
+    const text = document.createElement('div'); text.className = 'chatText'; text.textContent = pending.text;
+    row.append(meta, text); list.append(row); list.scrollTop = list.scrollHeight;
+  }
   function notice(text) { status.textContent = text; }
   function controls() { input.disabled = button.disabled = !active || blocked || sending; }
-  function rpc(params) {
-    return new Promise((resolve, reject) => {
-      const callback = '__chat_' + crypto.randomUUID().replace(/-/g, '');
-      const script = document.createElement('script');
-      const clean = () => { clearTimeout(timer); delete window[callback]; script.remove(); };
-      const timer = setTimeout(() => { clean(); reject(new Error('保存結果を確認できませんでした。')); }, 10000);
-      window[callback] = data => { clean(); resolve(data); };
-      script.onerror = () => { clean(); reject(new Error('チャットの通信に失敗しました。')); };
-      script.src = API + '?' + new URLSearchParams({ ...params, callback, _: Date.now() });
-      document.body.appendChild(script);
-    });
-  }
   async function sendRequest(payload) {
-    const token = await currentUser.getIdToken();
-    const body = new URLSearchParams({ ...payload, idToken: token });
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 25000);
-    try { await fetch(API, { method: 'POST', mode: 'no-cors', credentials: 'omit', body, signal: controller.signal }); }
-    finally { clearTimeout(timer); }
-    const end = Date.now() + 30000;
-    while (Date.now() < end) {
-      const result = await rpc({ action: 'status', requestId: payload.requestId });
-      if (!result.pending) {
-        if (!result.ok) throw new Error(result.error || '送信できませんでした。');
-        if (result.chatProtocol !== 1) throw new Error('チャットは準備中です。');
-        return result;
+    if (payload.tried) {
+      for (const path of ['chatArchiveQueue/', 'roomChats/']) {
+        const saved = (await firebase.database().ref(path + payload.roomCode + '/' + payload.requestId).once('value')).val();
+        if (saved && saved.uid === currentUser.uid && saved.text === payload.text && String(saved.session) === payload.session) return;
       }
-      await new Promise(resolve => setTimeout(resolve, 800));
     }
-    throw new Error('保存結果を確認できませんでした。同じ本文で再送すると重複を防げます。');
+    payload.tried = true;
+    const message = {
+      uid: currentUser.uid, name: getLocalPlayerName() || 'Player',
+      playerId: window.MonpatchIdentity.getId(), text: payload.text,
+      session: payload.session, createdAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    const patch = {};
+    patch['chatArchiveQueue/' + payload.roomCode + '/' + payload.requestId] = message;
+    patch['chatSendTimes/' + currentUser.uid] = firebase.database.ServerValue.TIMESTAMP;
+    await firebase.database().ref().update(patch);
   }
-  function render(snapshot) {
+  function render() {
     const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 55;
     const messages = [];
-    snapshot.forEach(child => {
+    visibleIds = new Set();
+    const merged = new Map();
+    [archivedMessages, queuedMessages].filter(Boolean).forEach(snapshot => snapshot.forEach(child => merged.set(child.key, child)));
+    [...merged.values()].sort((a, b) => Number(a.val().createdAt) - Number(b.val().createdAt)).slice(-80).forEach(child => {
       const m = child.val();
-      if (m && String(m.session) === session) messages.push(m);
+      if (m && String(m.session) === session) {
+        messages.push({ ...m, id: child.key }); visibleIds.add(child.key);
+      }
     });
     list.replaceChildren();
     messages.forEach(m => {
@@ -56,16 +56,18 @@
       const meta = document.createElement('div'); meta.className = 'chatMeta';
       const time = new Date(Number(m.createdAt)).toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' });
       meta.textContent = `${String(m.name || 'Player')} ・ ${time}`;
+      if (sending && pending?.requestId === m.id) meta.textContent += ' ・ 送信中…';
       const text = document.createElement('div'); text.className = 'chatText'; text.textContent = String(m.text || '');
       row.append(meta, text); list.append(row);
     });
     if (!messages.length) list.textContent = 'まだ発言はありません。';
+    showPending();
     if (nearBottom) list.scrollTop = list.scrollHeight;
   }
   function stop() {
     generation++;
-    if (ref) ref.off(); ref = null; code = ''; session = ''; active = false;
-    box.hidden = true; list.replaceChildren(); input.value = ''; pending = null; controls();
+    if (ref) ref.off(); if (queueRef) queueRef.off(); queueRef = null; archivedMessages = queuedMessages = null; ref = null; code = ''; session = ''; active = false;
+    box.hidden = true; list.replaceChildren(); visibleIds.clear(); input.value = ''; pending = null; controls();
   }
   async function start(roomCode, room) {
     if (code === roomCode && session === String(room.createdAt)) return;
@@ -73,35 +75,39 @@
     const mine = generation;
     notice('チャットを確認しています…');
     try {
-      const info = await rpc({ action: 'chatInfo' });
+      const config = await firebase.database().ref('chatConfig/asyncEnabled').once('value');
+      const info = { chatProtocol: 1, ready: config.val() === true };
       if (mine !== generation) return;
       if (info.chatProtocol !== 1 || !info.ready) { notice('チャットは準備中です。'); return; }
       if (blocked) { notice('このIDはマルチ対戦の利用が制限されています。'); return; }
-      active = true; controls(); notice('1回200文字まで。発言は管理用ログに保存されます。');
+      active = true; controls(); notice('1回200文字まで。発言は保存後、管理用ログへ順次記録されます。');
       ref = firebase.database().ref('roomChats/' + code).orderByChild('createdAt').limitToLast(80);
-      ref.on('value', snap => { if (mine === generation) render(snap); }, () => {
+      const denied = () => {
         if (mine !== generation) return;
         active = false; controls(); notice('チャットに接続できません。再入室してください。');
-      });
+      };
+      ref.on('value', snap => { if (mine === generation) { archivedMessages = snap; render(); } }, denied);
+      queueRef = firebase.database().ref('chatArchiveQueue/' + code).orderByChild('createdAt').limitToLast(80);
+      queueRef.on('value', snap => { if (mine === generation) { queuedMessages = snap; render(); } }, denied);
     } catch (_) { if (mine === generation) notice('チャットに接続できません。再入室してください。'); }
   }
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (!active || blocked || sending || !currentUser || !code) return;
     const text = input.value.trim();
-    if (!text || Array.from(text).length > 200) { notice('本文は1〜200文字で入力してください。'); return; }
+    if (!text || text.length > 200) { notice('本文は1〜200文字で入力してください。'); return; }
     const mine = generation;
     if (!pending || pending.text !== text || pending.roomCode !== code) {
       pending = { action: 'chatSend', requestId: 'c_' + crypto.randomUUID().replace(/-/g, ''), roomCode: code, session, text };
     }
     const payload = pending;
-    sending = true; controls(); notice('発言を保存しています…');
+    sending = true; controls(); showPending(); notice('送信しています…');
     try {
       await sendRequest(payload);
       if (mine !== generation) return;
-      input.value = ''; pending = null; notice('送信しました。');
-    } catch (error) { if (mine === generation) notice(error.message || '送信に失敗しました。'); }
-    finally { sending = false; controls(); }
+      input.value = ''; pending = null; notice('送信しました。'); render();
+    } catch (error) { if (mine === generation) notice(String(error.code || '').includes('PERMISSION_DENIED') ? '送信できません。連続送信は3秒待ち、利用制限も確認してください。' : '送信できませんでした。接続を確認して再送してください。'); }
+    finally { sending = false; controls(); showPending(); }
   });
   async function assertAllowed() {
     if (blocked) throw new Error('このIDはマルチ対戦の利用が制限されています。');

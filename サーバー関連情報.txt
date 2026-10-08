@@ -55,3 +55,11 @@ Firebaseルール案：server/database.rules.json。既存ルールを読んで�
 保存先：既存pika_matchのChatLogs、ブロック一覧：ChatBlocks。
 一般のプレイヤーはroomChatsへの書込みとblockedUsersの編集はできない。
 設定とデプロイは静的ゲームファイルのアップロードとは別操作。導入手順_v2.69.txtを参照。
+
+通常版チャット高速化：2026/10/08
+chatArchiveQueue：本人が追加だけ可能な保存待ち本文。退室・ブロック処理では削除しない。
+archiveMonpatchChat：1分の時間トリガー。シートへ記録・flush後にroomChatsへ移してキューを削除。
+chatArchiveReceipts：記録済みIDの再利用防止。クライアントから読み書き不可。
+chatSendTimes：本人だけがサーバー時刻を書込み、3秒制限を検証。
+chatConfig/asyncEnabled：定期記録の準備後だけ有効。管理サーバーだけ更新可。
+新しい権限・秘密鍵の追加は不要。既存PWAの送信APIは維持。

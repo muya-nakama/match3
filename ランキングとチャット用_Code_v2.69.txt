@@ -139,7 +139,12 @@ const CHAT_DB = 'https://match3-battle-53092-default-rtdb.asia-southeast1.fireba
 const CHAT_API_KEY = 'AIzaSyD6zij-aWSCb7k8C-DrrcbBcQ0mO3bHl-M';
 
 function chatSheets_() {
-  const base = sheets_(), ss = base.ranks.getParent();
+  // Chat does not need to load or validate either ranking tab on every send.
+  const props = PropertiesService.getScriptProperties();
+  const savedId = props.getProperty('RANKING_SPREADSHEET_ID');
+  const ss = savedId ? SpreadsheetApp.openById(savedId) : SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error('スプレッドシートからsetupRankingV2を先に実行してください。');
+  if (!savedId) props.setProperty('RANKING_SPREADSHEET_ID', ss.getId());
   function sheet(name, headers) {
     let s = ss.getSheetByName(name);
     if (!s) {
@@ -202,22 +207,37 @@ function chatSend_(p, uid) {
     const name = String(room.players[uid].name || 'Player').slice(0, 16);
     const playerId = /^[a-zA-Z0-9_-]{20,80}$/.test(String(room.players[uid].playerId || '')) ? String(room.players[uid].playerId) : '';
     const last = logs.getLastRow();
-    if (last <= 1 || String(logs.getRange(last, 1).getValue()) !== date) {
-      if (last > 2) { const group = logs.getRowGroup(last, 1); if (group) group.collapse(); }
+    let header = 0;
+    if (last <= 1 || chatDate_(logs.getRange(last, 1).getValue()) !== date) {
+      if (last > 2) { const group = chatGroup_(logs, last); if (group) group.collapse(); }
       logs.appendRow([date, '', '', '', '', '', '▼ この日の発言', '', '', '']);
       logs.getRange(logs.getLastRow(), 1, 1, 10).setBackground('#eeeeee').setFontWeight('bold');
+      header = logs.getLastRow();
     }
     logs.appendRow([date, time, roomCode, uid, playerId, "'" + name, "'" + text, p.requestId, session, now.getTime()]);
     const row = logs.getLastRow();
     logs.getRange(row, 1, 1, 9).setNumberFormat('@');
     logs.getRange(row, 7).setWrap(true);
-    const todayRows = logs.getRange(2, 1, row - 1, 8).getValues();
-    let header = 2;
-    for (let i = todayRows.length - 1; i >= 0; i--) {
-      if (String(todayRows[i][0]) === date && !todayRows[i][3] && !todayRows[i][7]) { header = i + 2; break; }
+    const props = PropertiesService.getScriptProperties();
+    if (!header) {
+      let saved;
+      try { saved = JSON.parse(props.getProperty('CHAT_DAY_HEADER') || 'null'); } catch (_) {}
+      if (saved && saved.date === date && Number.isInteger(saved.row) && saved.row >= 2 && saved.row < row) {
+        const h = logs.getRange(saved.row, 1, 1, 8).getValues()[0];
+        if (chatDate_(h[0]) === date && !h[3] && !h[7]) header = saved.row;
+      }
+      // Recover once after installation or a manual sheet edit, rather than rereading history per send.
+      if (!header) {
+        const todayRows = logs.getRange(2, 1, row - 1, 8).getValues();
+        header = 2;
+        for (let i = todayRows.length - 1; i >= 0; i--) {
+          if (chatDate_(todayRows[i][0]) === date && !todayRows[i][3] && !todayRows[i][7]) { header = i + 2; break; }
+        }
+      }
     }
+    props.setProperty('CHAT_DAY_HEADER', JSON.stringify({ date, row: header }));
     if (row > header + 1) {
-      const currentGroup = logs.getRowGroup(header + 1, 1);
+      const currentGroup = chatGroup_(logs, header + 1);
       if (currentGroup) currentGroup.remove();
     }
     logs.getRange(header + 1, 1, row - header, 9).shiftRowGroupDepth(1);
@@ -229,7 +249,72 @@ function chatSend_(p, uid) {
   firebaseAdmin_('roomChats/' + roomCode + '/' + p.requestId, 'put', message);
   return { ok: true, chatProtocol: 1, messageId: p.requestId };
 }
+function chatDate_(value) { return value instanceof Date ? Utilities.formatDate(value, 'Asia/Tokyo', 'yyyy-MM-dd') : String(value); }
+function chatGroup_(sheet, row) { try { return sheet.getRowGroup(row, 1); } catch (_) { return null; } }
 function untext_(v) { return String(v || '').replace(/^'/, ''); }
+// Runs independently of players' browsers. Queue entries survive room deletion and blocking.
+function archiveMonpatchChat() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return;
+  try {
+    const queue = firebaseAdmin_('chatArchiveQueue') || {}, items = [];
+    Object.keys(queue).forEach(room => Object.keys(queue[room] || {}).forEach(id => items.push({ room, id, m: queue[room][id] })));
+    if (!items.length) return;
+    items.sort((a, b) => Number(a.m.createdAt) - Number(b.m.createdAt));
+    const logs = chatSheets_().logs, last = logs.getLastRow();
+    const saved = new Map(last > 1 ? logs.getRange(2, 1, last - 1, 10).getValues().filter(r => r[7]).map(r => [String(r[2]) + '/' + r[7], r]) : []);
+    const groups = new Map(), patch = {};
+    items.slice(0, 200).forEach(({room, id, m}) => {
+      if (!/^\d{6}$/.test(room) || !/^c_[a-f0-9]{32}$/.test(id) || !m || !/^[A-Za-z0-9_-]{1,128}$/.test(String(m.uid)) || typeof m.text !== 'string' || !m.text || m.text.length > 200 || !Number.isFinite(Number(m.createdAt))) throw new Error('保存待ちデータが不正です。');
+      const key = room + '/' + id, previous = saved.get(key);
+      if (previous) {
+        if (String(previous[3]) !== m.uid || untext_(previous[6]) !== m.text || String(previous[8]) !== String(m.session)) throw new Error('保存済み本文と一致しません。');
+      } else {
+        const date = Utilities.formatDate(new Date(Number(m.createdAt)), 'Asia/Tokyo', 'yyyy-MM-dd');
+        const time = Utilities.formatDate(new Date(Number(m.createdAt)), 'Asia/Tokyo', 'HH:mm');
+        let header = groups.get(date)?.header;
+        if (!header) {
+          const end = logs.getLastRow();
+          if (end > 1 && chatDate_(logs.getRange(end, 1).getValue()) === date) {
+            const all = logs.getRange(2, 1, end - 1, 8).getValues();
+            for (let i = all.length - 1; i >= 0; i--) if (chatDate_(all[i][0]) === date && !all[i][3] && !all[i][7]) { header = i + 2; break; }
+          }
+          if (!header) {
+            if (end > 2) { const old = chatGroup_(logs, end); if (old) old.collapse(); }
+            logs.appendRow([date, '', '', '', '', '', '▼ この日の発言', '', '', '']);
+            header = logs.getLastRow();
+            logs.getRange(header, 1, 1, 10).setBackground('#eeeeee').setFontWeight('bold');
+          }
+          groups.set(date, { header, end: header });
+          const old = chatGroup_(logs, header + 1); if (old) old.remove();
+        }
+        const row = [date, time, room, m.uid, m.playerId || '', "'" + m.name, "'" + m.text, id, String(m.session), Number(m.createdAt)];
+        logs.appendRow(row); saved.set(key, row); groups.get(date).end = logs.getLastRow();
+      }
+      patch['roomChats/' + room + '/' + id] = m;
+      patch['chatArchiveReceipts/' + room + '/' + id] = true;
+      patch['chatArchiveQueue/' + room + '/' + id] = null;
+    });
+    groups.forEach(({header, end}) => {
+      const count = end - header;
+      if (count > 0) { logs.getRange(header + 1, 1, count, 9).setNumberFormat('@').shiftRowGroupDepth(1); logs.getRange(header + 1, 7, count, 1).setWrap(true); }
+    });
+    SpreadsheetApp.flush();
+    // A failed transfer leaves the queue untouched; the next run deduplicates the saved rows.
+    firebaseAdmin_('', 'patch', patch);
+    PropertiesService.getScriptProperties().setProperty('CHAT_ARCHIVE_LAST_OK', new Date().toISOString());
+  } finally { lock.releaseLock(); }
+}
+function setupMonpatchAsyncChat() {
+  // Install and verify the archiver before allowing any direct client writes.
+  firebaseAdmin_('chatConfig/asyncEnabled', 'put', false);
+  chatSheets_();
+  if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'archiveMonpatchChat')) {
+    ScriptApp.newTrigger('archiveMonpatchChat').timeBased().everyMinutes(1).create();
+  }
+  archiveMonpatchChat();
+  firebaseAdmin_('chatConfig/asyncEnabled', 'put', true);
+}
 function chatRulesSafe_(rules) {
   const ban = "!root.child('blockedUsers').child(auth.uid).exists()";
   function grantsSafe(node, forbidWrites, room) {
