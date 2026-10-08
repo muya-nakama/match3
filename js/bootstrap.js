@@ -51,6 +51,7 @@
         const credential = await firebase.auth().signInAnonymously();
         const user = credential.user;
         currentUser = user;
+        window.MonpatchChat?.watchBan(user);
 
         onlineStatus.textContent = "オンライン";
         onlineStatus.className = "value status ok";
@@ -75,8 +76,7 @@
             console.error(err);
             setMessage("部屋作成に失敗しました: " + (err && err.message ? err.message : err));
           } finally {
-            createRoomBtn.disabled = false;
-            joinRoomBtn.disabled = false;
+            refreshEntryButtons();
           }
         });
 
@@ -97,8 +97,7 @@
             console.error(err);
             setMessage("参加に失敗しました: " + (err && err.message ? err.message : err));
           } finally {
-            createRoomBtn.disabled = false;
-            joinRoomBtn.disabled = false;
+            refreshEntryButtons();
           }
         });
 
