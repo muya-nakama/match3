@@ -1,0 +1,30 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$room": {
+        ".read": "auth != null && !root.child('blockedUsers').child(auth.uid).exists()",
+        ".write": "auth != null && !root.child('blockedUsers').child(auth.uid).exists()",
+        "players": {
+          "$uid": {
+            ".validate": "!root.child('blockedUsers').child($uid).exists() || newData.child('forfeited').val() === true"
+          }
+        }
+      }
+    },
+    "roomChats": {
+      "$room": {
+        ".read": "auth != null && !root.child('blockedUsers').child(auth.uid).exists() && root.child('rooms').child($room).child('players').child(auth.uid).exists()",
+        ".write": false,
+        ".indexOn": ["createdAt"]
+      }
+    },
+    "blockedUsers": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    }
+  }
+}
