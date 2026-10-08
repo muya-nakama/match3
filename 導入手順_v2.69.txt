@@ -2,8 +2,10 @@
 
 【実装内容】
 ・ルーム待機画面にチャット。1回200文字、3秒の連続送信制限。
-・Apps Scriptが本人のFirebase認証トークンを検証し、在室を確認。
-・発言はpika_matchのChatLogsへ先に保存し、その後FirebaseのroomChatsへ配信。
+・通常版はFirebaseルールで本人・在室・セッション・本文・連続送信を検証。旧PWAはApps Scriptで検証。
+・通常版はchatArchiveQueueへ即時保存・表示し、サーバーが約1分ごとにChatLogsへ記録。退室後も記録される。
+・シート記録後にroomChatsへ移し、保存待ちキューを消す。失敗時は次回再試行し重複を防ぐ。
+・PWA版は従来どおりChatLogsへ先に保存してからroomChatsへ配信。今回の高速化は通常版のみ。
 ・本文／名前はHTMLとして実行しない。シートでも数式として実行しない。
 ・ChatLogsには日付、時刻、ルーム、Firebase UID、ランキングID、名前、本文を保存。
 ・JSTの日付見出しごとに発言行をグループ化。前日分は折りたたみ、＋で展開できる。
@@ -34,9 +36,11 @@ RankingV2／PlayersV2／旧ランキングの行は変更していない。
    既存の厳しい条件や別用途のパスがあれば保持して結合する。無条件の親.read/.writeを残すとブロックを回避できる。
    roomsは匿名認証済み・非ブロックUIDだけ許可。roomChatsは参加者の読出しのみ、書込みは管理サーバーだけ。
    blockedUsersは本人の判定用読出しだけ。一般プレイヤーからの書込みは禁止。
-6. Apps ScriptでsetupMonpatchChatを1回実行し、表示された追加権限を承認する。
+6. 新規導入時はApps ScriptでsetupMonpatchChatを1回実行し、表示された追加権限を承認する。
    Firebase管理アクセスとルールを検査し、ログ／ブロック用の書式と編集トリガーを設定する。
    失敗した場合は未設定のまま。CHAT_READYを手動で1へ変更しない。
+   通常版の高速送信にはsetupMonpatchAsyncChatも1回実行する。archiveMonpatchChatの1分トリガーを作成してから有効化する。
+   既存2.69.0からの更新では、新Chat.gsを保存しsetupMonpatchAsyncChatを実行、Firebaseルールと通常版のchat.js/index.htmlを更新する。
 7. 既存Webアプリの「デプロイを管理→鉛筆→新バージョン」で更新する。
    実行ユーザー：自分、アクセス：全員。既存デプロイを更新して同じURLを維持する。
    URLが変わった場合はjs/chat.jsとjs/game-core.js、download側の両コピーへ新URLを反映。
