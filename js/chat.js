@@ -43,7 +43,7 @@
     const messages = [];
     visibleIds = new Set();
     const merged = new Map();
-    [archivedMessages, queuedMessages].filter(Boolean).forEach(snapshot => snapshot.forEach(child => merged.set(child.key, child)));
+    [archivedMessages, queuedMessages].filter(Boolean).forEach(snapshot => snapshot.forEach(child => { merged.set(child.key, child); }));
     [...merged.values()].sort((a, b) => Number(a.val().createdAt) - Number(b.val().createdAt)).slice(-80).forEach(child => {
       const m = child.val();
       if (m && String(m.session) === session) {
