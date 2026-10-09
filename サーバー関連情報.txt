@@ -45,3 +45,21 @@ Git の履歴だけを頼りにせず、動作確認済みの全ファイル ZIP
 ランキングはRankingV2、プロフィールはPlayersV2へ保存。既存タブは未変更。
 setupRankingV2の実行でスプレッドシートIDをScript Propertiesへ保存する。
 公開サーバーへのコード反映・再デプロイは別途必要。詳細は導入手順_v2.67.txt。
+
+【2026-10-08 v2.69.0補足】
+ルームチャット：js/chat.js、download/js/chat.js。Apps Scriptは既存ランキングと同じURL。
+チャット実装：server/Chat.gs。ランキング処理server/Code.gsと合わせて使用する。
+電話での貼付け用：ランキングとチャット用_Code_v2.69.txt（2つのgsを連結したもの）。
+権限設定：server/appsscript.json。Firebaseアクセスは管理者のGoogle OAuth権限を使用。
+Firebaseルール案：server/database.rules.json。既存ルールを読んで必要に応じて結合する。
+保存先：既存pika_matchのChatLogs、ブロック一覧：ChatBlocks。
+一般のプレイヤーはroomChatsへの書込みとblockedUsersの編集はできない。
+設定とデプロイは静的ゲームファイルのアップロードとは別操作。導入手順_v2.69.txtを参照。
+
+通常版チャット高速化：2026/10/08
+chatArchiveQueue：本人が追加だけ可能な保存待ち本文。退室・ブロック処理では削除しない。
+archiveMonpatchChat：1分の時間トリガー。シートへ記録・flush後にroomChatsへ移してキューを削除。
+chatArchiveReceipts：記録済みIDの再利用防止。クライアントから読み書き不可。
+chatSendTimes：本人だけがサーバー時刻を書込み、3秒制限を検証。
+chatConfig/asyncEnabled：定期記録の準備後だけ有効。管理サーバーだけ更新可。
+新しい権限・秘密鍵の追加は不要。既存PWAの送信APIは維持。

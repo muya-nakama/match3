@@ -657,8 +657,10 @@
 
       currentRoomRef = firebase.database().ref("rooms/" + code);
       currentRoomRef.on("value", snap => {
+        if (currentRoomCode !== code) return;
         if (!snap.exists()) {
           currentRoomData = null;
+          resetLobbyUI();
           setMessage("この部屋は削除されました。");
           return;
         }
@@ -666,6 +668,7 @@
         const room = snap.val();
         currentRoomData = room;
 
+        window.MonpatchChat?.start(code, room);
         renderPlayers(room);
         updateLobbyButtons(room);
         renderBattleHud(room);
@@ -692,6 +695,11 @@
             battleStarted = false;
           }
         }
+      }, () => {
+        if (currentRoomCode !== code) return;
+        resetLobbyUI();
+        showMultiPage();
+        setMessage("ルームへの接続が拒否されました。利用制限または通信設定を確認してください。");
       });
     }
 
@@ -707,6 +715,7 @@
     }
 
     async function createUniqueRoom(uid) {
+      await window.MonpatchChat?.assertAllowed();
       const db = firebase.database();
 
       for (let attempt = 0; attempt < 20; attempt++) {
@@ -751,6 +760,7 @@
     }
 
     async function joinRoom(code, uid) {
+      await window.MonpatchChat?.assertAllowed();
       if (!/^\d{6}$/.test(code)) {
         throw new Error("部屋番号は6桁の数字で入力してください。");
       }
@@ -886,6 +896,7 @@
     }
 
     function resetLobbyUI() {
+      window.MonpatchChat?.stop();
       cancelBattleDisconnect();
       joinRoomArea?.classList.remove("hiddenByRoom");
       if (currentRoomRef) {
