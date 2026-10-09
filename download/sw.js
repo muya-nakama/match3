@@ -1,4 +1,4 @@
-const CACHE_NAME = "monpatch-download-2.68.2";
+const CACHE_NAME = "monpatch-download-2.69.0";
 const APP_FILES = [
   "./",
   "./index.html",
@@ -10,6 +10,7 @@ const APP_FILES = [
   "./pwa.js",
   "./version.json",
   "./js/app.js",
+  "./js/chat.js",
   "./js/environment.js",
   "./js/audio-settings.js",
   "./js/player-identity.js",
