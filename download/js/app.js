@@ -61,14 +61,6 @@
     }
     setTimeout(prepareThreePageLayout,0);
     multiModeBtn?.addEventListener("click", showMultiPage);
-    multiTopBackFixed?.addEventListener("click", async()=>{
-      if(currentRoomCode && currentUser){
-        try{ await leaveRoom(currentRoomCode,currentUser.uid); }catch(e){ console.error(e); }
-        resetLobbyUI();
-      }
-      multiTopBackFixed?.classList.remove("show");
-      showTopPage();
-    });
 const uidEl = document.getElementById("uid");
     const battlePlayerNameInput = document.getElementById("battlePlayerNameInput");
     const battlePlayerNameSave = document.getElementById("battlePlayerNameSave");

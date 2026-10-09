@@ -41,6 +41,7 @@
         finished: true,
         score: -1,
         finalScore: -1,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP,
         disconnectedAt: firebase.database.ServerValue.TIMESTAMP
       });
       if (generation !== battleDisconnectGeneration) {
@@ -99,7 +100,7 @@
         await firebase.database().ref(`rooms/${code}/players/${currentUser.uid}`).update({
           forfeited: false, finished: false, finalScore: null,
           score: battleStarted ? Number(safeFrameEval("score", 0)) || 0 : 0,
-          disconnectedAt: null, disconnectReason: null
+          disconnectedAt: null, disconnectReason: null, updatedAt: firebase.database.ServerValue.TIMESTAMP
         });
         if (currentRoomCode === code) await armBattleDisconnect(code);
       } catch (error) {
@@ -342,12 +343,12 @@
 
       try {
         const ref = firebase.database().ref(`rooms/${currentRoomCode}/attacks`).push();
-        await ref.set({
-          id: ref.key,
-          fromUid: currentUser.uid,
-          toUid: targetUid,
-          kind,
-          createdAt: firebase.database.ServerValue.TIMESTAMP
+        await firebase.database().ref(`rooms/${currentRoomCode}`).update({
+          [`attacks/${ref.key}`]: {
+            id: ref.key, fromUid: currentUser.uid, toUid: targetUid,
+            kind, createdAt: firebase.database.ServerValue.TIMESTAMP
+          },
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
         });
         return true;
       } catch (e) {
@@ -400,7 +401,9 @@
 
         attackQueue.shift();
         try {
-          await firebase.database().ref(`rooms/${currentRoomCode}/attacks/${ev.key}`).remove();
+          await firebase.database().ref(`rooms/${currentRoomCode}`).update({
+            [`attacks/${ev.key}`]: null, updatedAt: firebase.database.ServerValue.TIMESTAMP
+          });
         } catch (e) {
           console.error("attack remove failed", e);
         }
@@ -424,8 +427,8 @@
 
       try {
         await firebase.database()
-          .ref(`rooms/${currentRoomCode}/players/${currentUser.uid}/score`)
-          .set(sc);
+          .ref(`rooms/${currentRoomCode}/players/${currentUser.uid}`)
+          .update({score: sc, updatedAt: firebase.database.ServerValue.TIMESTAMP});
       } catch (e) {
         console.error("score sync failed", e);
       }
@@ -448,7 +451,8 @@
             score: sc,
             finalScore: sc,
             finished: true,
-            returned: false
+            returned: false,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP
           });
       } catch (e) {
         finalScoreSubmitted = false;
@@ -536,6 +540,7 @@
           current.results = results;
           current.status = "results";
           current.resultAt = Date.now() + serverTimeOffset;
+          current.updatedAt = firebase.database.ServerValue.TIMESTAMP;
           return current;
         });
       } catch (e) {
@@ -577,7 +582,7 @@
       button.disabled = true; status.textContent = "ロビーへ戻っています…";
       try {
         await cancelBattleDisconnect();
-        await firebase.database().ref(`rooms/${currentRoomCode}/players/${currentUser.uid}`).update({returned: true, ready: false});
+        await firebase.database().ref(`rooms/${currentRoomCode}/players/${currentUser.uid}`).update({returned: true, ready: false, updatedAt: firebase.database.ServerValue.TIMESTAMP});
         stopBattleRuntime();
         resetSpectating();
         battleStarted = false;
@@ -670,6 +675,7 @@
         try {
           await firebase.database().ref("rooms/" + currentRoomCode).update({
             status: "playing",
+            updatedAt: firebase.database.ServerValue.TIMESTAMP,
             startedAt: startAt || firebase.database.ServerValue.TIMESTAMP
           });
         } catch (e) {
@@ -852,6 +858,7 @@
 
           return {
             createdAt: firebase.database.ServerValue.TIMESTAMP,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP,
             status: "waiting",
             hostUid: uid,
             startAt: null,
@@ -874,6 +881,7 @@
           // ホスト情報と入室順カウンタも念のため保証。
           await roomRef.update({
             hostUid: uid,
+            updatedAt: firebase.database.ServerValue.TIMESTAMP,
             nextJoinOrder: 1
           });
 
@@ -979,6 +987,8 @@
         if (!room.players[uid]) {
           return room;
         }
+
+        room.updatedAt = firebase.database.ServerValue.TIMESTAMP;
 
         if (room.status === "countdown" || room.status === "playing") {
           room.players[uid].forfeited = true;

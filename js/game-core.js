@@ -76,8 +76,8 @@ document.addEventListener("visibilitychange",()=>{
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.69.3";
-let rankingMinutes=3,rankingInterference=false,rankingJsonpSeq=0;
+const GAME_VERSION="2.69.5";
+let rankingMinutes=3,rankingInterference=false;
 
 const titleScreen=document.getElementById("titleScreen");
 const startBtn=document.getElementById("startBtn");
@@ -200,10 +200,6 @@ function applyRandomBlocker(kind){
  return true;
 }
 
-function formatTime(sec){
- sec=Math.max(0,sec);
- return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`;
-}
 function updateTimer(){
  if(testerMode || tutorialMode){
   timerEl.textContent="∞";
@@ -309,12 +305,6 @@ function startTesterGame(){
  render();
 }
 
-document.querySelectorAll(".durationBtn").forEach(btn=>{
- btn.addEventListener("click",()=>{
-  playDecision();
-  selectedMinutes=Number(btn.dataset.min);
- });
-});
 durationSelect?.addEventListener("change",()=>{
  playDecision();
  selectedMinutes=Number(durationSelect.value)||3;
@@ -567,36 +557,7 @@ function generateCleanBoard(){
  }
 }
 
-function generateTesterBoard(){
- // First build a deterministic no-match normal board.
- B=Array.from({length:ROWS},(_,r)=>
-  Array.from({length:COLS},(_,c)=>make((r*2+c*3)%COLORS))
- );
 
- // テスターでは「合わせた時の動作」だけを見るため、
- // 左右順や矢印方向の重複は置かず、効果カテゴリごとに1組だけ配置。
- // Row 0: 花+花 / 花+爆弾 / 花+矢印
- B[0][0]=make(null,"flower"); B[0][1]=make(null,"flower");
- B[0][3]=make(null,"flower"); B[0][4]=make(null,"bomb");
- B[0][6]=make(null,"flower"); B[0][7]=make(null,"lineH");
-
- // Row 3: 爆弾+爆弾 / 爆弾+矢印 / 矢印+矢印
- B[3][0]=make(null,"bomb");  B[3][1]=make(null,"bomb");
- B[3][3]=make(null,"bomb");  B[3][4]=make(null,"lineH");
- B[3][6]=make(null,"lineH"); B[3][7]=make(null,"lineV");
-}
-
-function resetTesterBoard(){
- generateTesterBoard();
- score=0;
- selected=null;
- lock=false;
- chainLevel=1;
- hintPair=null;
- updateChain();
- setMsg("テスター用：隣り合う特殊ブロックを入れ替えてテスト");
- render();
-}
 
 function newBoard(resetScore=true){
  for(let tries=0;tries<200;tries++){
@@ -799,100 +760,10 @@ function scanMatches(){
 }
 
 
-function squareContaining(pos){
- if(!pos)return null;
- const color=isMatchableNormal(B[pos.r]?.[pos.c]) ? B[pos.r][pos.c].color : null;
- if(color==null)return null;
- const starts=[
-  {r:pos.r,c:pos.c},
-  {r:pos.r-1,c:pos.c},
-  {r:pos.r,c:pos.c-1},
-  {r:pos.r-1,c:pos.c-1}
- ];
- for(const s of starts){
-  if(s.r<0||s.c<0||s.r>=ROWS-1||s.c>=COLS-1)continue;
-  const pts=[
-   {r:s.r,c:s.c},{r:s.r,c:s.c+1},
-   {r:s.r+1,c:s.c},{r:s.r+1,c:s.c+1}
-  ];
-  if(pts.every(p=>{
-   const t=B[p.r][p.c];
-   return isMatchableNormal(t) && t.color===color;
-  })) return {cells:pts,color};
- }
- return null;
-}
 
 
 
-function matchedBentShape(match,preferred=null){
- const hs=match.groups.filter(g=>g.dir==="H");
- const vs=match.groups.filter(g=>g.dir==="V");
- const candidates=[];
 
- for(const h of hs){
-  for(const v of vs){
-   if(h.color!==v.color)continue;
-
-   // H/V の実際のマッチが交差していること。
-   const cross=h.cells.find(a=>v.cells.some(b=>a.r===b.r&&a.c===b.c));
-   if(!cross)continue;
-
-   const map=new Map();
-   for(const p of [...h.cells,...v.cells])map.set(K(p.r,p.c),{r:p.r,c:p.c});
-   const cells=[...map.values()];
-   if(cells.length<5)continue;
-
-   candidates.push({cells,color:h.color,cross});
-  }
- }
-
- if(!candidates.length)return null;
-
- // 操作したブロックを含む形を優先。なければ最初の成立形。
- if(preferred){
-  const hit=candidates.find(x=>x.cells.some(p=>p.r===preferred.r&&p.c===preferred.c));
-  if(hit)return hit;
- }
- return candidates[0];
-}
-
-function fiveShapeContaining(pos){
- if(!pos)return null;
- const t0=B[pos.r]?.[pos.c];
- if(!isMatchableNormal(t0))return null;
- const color=t0.color;
-
- // Collect same-color orthogonally-connected cells around the moved position.
- const seen=new Set(), stack=[{r:pos.r,c:pos.c}], cells=[];
- while(stack.length){
-  const p=stack.pop(), k=K(p.r,p.c);
-  if(seen.has(k) || !inside(p.r,p.c))continue;
-  const t=B[p.r][p.c];
-  if(!isMatchableNormal(t) || t.color!==color)continue;
-  seen.add(k); cells.push(p);
-  stack.push({r:p.r-1,c:p.c},{r:p.r+1,c:p.c},{r:p.r,c:p.c-1},{r:p.r,c:p.c+1});
- }
-
- if(cells.length<5)return null;
-
- // Straight five is handled as a flower elsewhere, so exclude any pure 5+ line.
- const sameRow=cells.every(p=>p.r===cells[0].r);
- const sameCol=cells.every(p=>p.c===cells[0].c);
- if(sameRow || sameCol)return null;
-
- // Require that the connected shape contains both a horizontal and vertical arm.
- const rows=new Map(), cols=new Map();
- for(const p of cells){
-  rows.set(p.r,(rows.get(p.r)||0)+1);
-  cols.set(p.c,(cols.get(p.c)||0)+1);
- }
- const hasH=[...rows.values()].some(n=>n>=3);
- const hasV=[...cols.values()].some(n=>n>=3);
- if(!hasH || !hasV)return null;
-
- return {cells,color};
-}
 
 function chooseSpecials(match,preferred=null,moveDir=null){
  const contains=(arr,p)=>p&&arr.some(q=>q.r===p.r&&q.c===p.c);
@@ -1003,9 +874,6 @@ function chooseSpecials(match,preferred=null,moveDir=null){
  return result;
 }
 
-function chooseSpecial(match,preferred=null,moveDir=null){
- return chooseSpecials(match,preferred,moveDir)[0] || null;
-}
 
 function randomPresentColor(){
  const present=new Set();

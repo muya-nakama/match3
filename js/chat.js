@@ -37,6 +37,7 @@
     const patch = {};
     patch['chatArchiveQueue/' + payload.roomCode + '/' + payload.requestId] = message;
     patch['chatSendTimes/' + currentUser.uid] = firebase.database.ServerValue.TIMESTAMP;
+    patch['rooms/' + payload.roomCode + '/updatedAt'] = firebase.database.ServerValue.TIMESTAMP;
     await firebase.database().ref().update(patch);
   }
   function place(destination) {

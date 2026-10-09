@@ -29,7 +29,7 @@
       try {
         await firebase.database().ref(`rooms/${currentRoomCode}/players/${currentUser.uid}`).transaction(player => {
           if (!player) return;
-          return {...player, ...patch};
+          return {...player, ...patch, updatedAt: firebase.database.ServerValue.TIMESTAMP};
         });
       } catch (error) {
         console.error("room profile update failed", error);
@@ -119,6 +119,7 @@
         connected: true,
         score: 0,
         joinOrder,
+        updatedAt: firebase.database.ServerValue.TIMESTAMP,
         joinedAt: firebase.database.ServerValue.TIMESTAMP
       };
     }

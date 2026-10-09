@@ -1,65 +1,41 @@
-モンパッチ / match3　公開・復旧に関する情報
-確認したソース：muya-nakama/match3、main、コミット 22738bb（ゲーム版 v2.66）
-更新日：2026-09-27
+モンパッチ v2.69.5 — 接続先と復旧情報（2026/10/09）
 
-【公開先とファイル】
-GitHub リポジトリ：https://github.com/muya-nakama/match3
-公開 URL：https://muya-nakama.github.io/match3/
-インストール用 URL：https://muya-nakama.github.io/match3/download/
-ゲームのトップはルートの index.html、インストール用は download/index.html。
-download/ にはゲーム用ファイルのコピー、manifest.webmanifest、sw.js、pwa.js、version.json、アイコン類がある。
-現行の download/version.json は 2.66.0。更新時は download/ 内のコピーとキャッシュ設定も揃える。
-GitHub Pages の公開ブランチと公開ディレクトリ、独自ドメインの有無は GitHub の Settings → Pages で確認する。
+【ゲーム】
+GitHub：https://github.com/muya-nakama/match3
+通常版：https://muya-nakama.github.io/match3/
+PWA版：https://muya-nakama.github.io/match3/download/
+通常版とdownload版には従来の機能差がある。今回の番号更新は内部整理によるもので、download版へ通常版の追加機能は移植していない。
 
-【オンライン対戦：Firebase】
-Firebase プロジェクト ID：match3-battle-53092
-Realtime Database：https://match3-battle-53092-default-rtdb.asia-southeast1.firebasedatabase.app/
-認証方法：Firebase Authentication の匿名ログイン（js/bootstrap.js の signInAnonymously）。
-対戦データ：Realtime Database の rooms/ 以下（js/multi.js）。
-接続設定の原本：js/app.js と download/js/app.js の firebaseConfig。
-再構築・移転時は Firebase コンソールで Authentication（匿名ログインの有効化）、Realtime Database のリージョン、セキュリティルールを確認する。ルールと既存の対戦データはこの ZIP に含まれない。必要なら Firebase 側で別途エクスポート・保管する。
-別の Firebase プロジェクトへ移す場合は、両方の app.js の firebaseConfig と認証・DB 設定を移転先に合わせる。
+【Firebase】
+プロジェクト：match3-battle-53092
+DB：https://match3-battle-53092-default-rtdb.asia-southeast1.firebasedatabase.app/
+接続設定：js/app.js、download/js/app.js
+匿名認証、ルーム管理、妨害配信、チャット配信、ブロック判定に使用。
+ルール原本：server/database.rules.json。今回は変更なし。
+データそのもの、Authenticationの設定、実際に公開されているルールはZIPに含まれない。
+roomdeleteの原本：Termux/roomdelete.cjs。今回は変更なし。
+ルームの削除は通常の更新作業とは別。今回の整理のために実行しない。
 
-【ランキング：Google Apps Script】
-現在の Web アプリ URL：
+【ランキング・チャット：Apps Script】
+Webアプリ：
 https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec
-接続先の記述箇所：js/game-core.js と download/js/game-core.js。
-Apps Script のソース、紐づくスプレッドシート、保存済みランキング、デプロイ設定・アクセス権はこの ZIP には含まれない。管理アカウントでプロジェクトとシートを確認し、ソースとデータのバックアップを別途保管する。移転して Web アプリ URL が変わる際は両方の game-core.js を更新する。
+ソース：server/Code.gs、server/Chat.gs
+携帯でまとめて貼付：ランキングとチャット用_Code.txt（分割ソースと同時使用しない）
+権限設定：server/appsscript.json。今回は変更なし。
+Code.gsは別保存された現行コードを採用。Chat.gsはv2.69.4の更新時刻記録入りを採用。
+RankingV2：時間・妨害設定別の最高点。PlayersV2：最新の名前・アイコン。
+ChatLogs：日付別の発言ログ。ChatBlocks：Firebase UIDのブロック一覧。
+通常版はchatArchiveQueueへ即時送信、archiveMonpatchChatが約1分ごとにシートへ記録してroomChatsへ移す。
+download版は従来のchatSend／chatInfoを使用するため、そのAPI・認証・保存処理を維持。
+CHAT_READY、RANKING_SPREADSHEET_ID等のScript Propertiesと既存トリガーは維持する。
+公開中のApps Script、Script Properties、トリガー、シートの実データは今回直接取得・変更していない。
 
-【完全バックアップと復旧】
-このフォルダの全ファイルを保管すれば、静的なゲーム画面・画像・スクリプトは再配置できる。ただしオンライン対戦とランキングの継続には上記の外部サービスも必要。
-編集のたびに全ファイル入り ZIP を受け取り、スマホに保存。動作確認後に OneDrive 側のバックアップも更新する。古い正常版は必要な期間残す。
-復旧時：ZIP を展開してスマホの Match3 フォルダ直下に index.html など全ファイルが揃うことを確認し、GitHub リポジトリに反映。GitHub Pages の公開を確認して、トップ・単独プレイ・オンライン対戦・ランキング・インストール版をそれぞれ試す。
-Termux 側の既存手順：スマホの Download/ゲーム/モンパッチ/Match3/ に全ファイルを置き、Termux の ~/.bashrc にある upload3 の src が同じ「Match3」（大文字 M）を指していることを確認してから upload3 を実行する。upload3 はファイルの追加・更新をコピーするが、元フォルダから削除したファイルを Git 側から自動削除しない。整理・削除は対象を確認して別途行う。
-Git の履歴だけを頼りにせず、動作確認済みの全ファイル ZIP を保管する。
-
-【管理者が別途記録する項目：公開 ZIP には記入しない】
-・GitHub / Firebase / Google の管理アカウント、復旧手段。
-・Firebase の DB ルールと必要なデータのバックアップ場所。
-・Apps Script プロジェクトとシートの所在、ソース・データのバックアップ場所。
-・GitHub Pages の公開設定と独自ドメインを使う場合の DNS 設定。
-パスワード、秘密鍵、アクセストークンはこのリポジトリや共有 ZIP に入れない。
-
-【2026-10-01 v2.67補足】
-ランキングV2コード：server/Code.gs（同一内容：ランキング用_Code_v2.67.txt）。
-ランキングはRankingV2、プロフィールはPlayersV2へ保存。既存タブは未変更。
-setupRankingV2の実行でスプレッドシートIDをScript Propertiesへ保存する。
-公開サーバーへのコード反映・再デプロイは別途必要。詳細は導入手順_v2.67.txt。
-
-【2026-10-08 v2.69.0補足】
-ルームチャット：js/chat.js、download/js/chat.js。Apps Scriptは既存ランキングと同じURL。
-チャット実装：server/Chat.gs。ランキング処理server/Code.gsと合わせて使用する。
-電話での貼付け用：ランキングとチャット用_Code_v2.69.txt（2つのgsを連結したもの）。
-権限設定：server/appsscript.json。Firebaseアクセスは管理者のGoogle OAuth権限を使用。
-Firebaseルール案：server/database.rules.json。既存ルールを読んで必要に応じて結合する。
-保存先：既存pika_matchのChatLogs、ブロック一覧：ChatBlocks。
-一般のプレイヤーはroomChatsへの書込みとblockedUsersの編集はできない。
-設定とデプロイは静的ゲームファイルのアップロードとは別操作。導入手順_v2.69.txtを参照。
-
-通常版チャット高速化：2026/10/08
-chatArchiveQueue：本人が追加だけ可能な保存待ち本文。退室・ブロック処理では削除しない。
-archiveMonpatchChat：1分の時間トリガー。シートへ記録・flush後にroomChatsへ移してキューを削除。
-chatArchiveReceipts：記録済みIDの再利用防止。クライアントから読み書き不可。
-chatSendTimes：本人だけがサーバー時刻を書込み、3秒制限を検証。
-chatConfig/asyncEnabled：定期記録の準備後だけ有効。管理サーバーだけ更新可。
-新しい権限・秘密鍵の追加は不要。既存PWAの送信APIは維持。
+【配置・更新】
+全ファイル入りZIP。展開して、いつものDownload/ゲーム/モンパッチ/Match3の内容を置換。
+旧ファイルは削除対象ファイル.txtに記載。単純な上書きだと旧ファイルは残る。
+upload3によるゲーム反映と、必要時のuploadgas／uploadfirebaseは別作業。
+すでにv2.69.4のサーバーが反映済みなら、この整理に伴うGAS・ルール再反映は不要。
+実機でトップのVer.2.69.5、シングル、2端末の対戦、ランキング、チャット、PWAの更新を確認する。
+ブラウザのサイトデータを消すと保存ID・名前・画像を失うため、ファイル更新とサイトデータ削除は区別する。
+旧正常ZIPを保管してから置換し、確認後にバックアップを更新する。
+管理アカウント、復旧情報、トークン、秘密鍵は公開ゲームファイルへ記載しない。

@@ -24,7 +24,7 @@ RankingV2／PlayersV2／旧ランキングの行は変更していない。
 【残る公開設定：GitHubのファイル更新だけでは完了しない】
 1. 既存のApps Scriptコード・マニフェストとFirebaseルールをバックアップ。
 2. ランキング保存先pika_matchから「拡張機能→Apps Script」を開く。
-3. ランキングとチャット用_Code_v2.69.txtをCode.gsへ貼り付ける。
+3. ランキングとチャット用_Code.txtをCode.gsへ貼り付ける。
    既存doGet/doPostを二重に残さない。他用途のコードまで削除しない。
    またはserver/Code.gsとserver/Chat.gsをそれぞれ配置する（両方式を混ぜない）。
 4. プロジェクト設定でappsscript.jsonを表示し、server/appsscript.jsonの権限を反映。
@@ -67,3 +67,14 @@ RankingV2／PlayersV2／旧ランキングの行は変更していない。
 【ファイル】
 このZIPは全ファイル入り。展開後にindex.html、game.html、js、download、server等を同じパスへ上書きする。
 GitHub以外に、Apps ScriptとFirebaseルールの反映が別途必要。
+
+【v2.69.5 整理版への更新】
+全ファイル置換用ZIPです。通常版とdownload版それぞれの現在の機能を維持しています。
+download版は2.69.0時点の機能のまま内部整理のみ。2.69.1〜4の機能追加はしていません。
+更新時は保存済みのサイトデータを削除せず、ファイルを差し替えてください。
+旧資料・旧コード複製5件は削除対象ファイル.txtに記載。上書きだけでは残るため取り除いてください。
+Apps ScriptのCode.gsは別保存の現行コード、Chat.gsは2.69.4の更新時刻記録入りです。
+Firebaseルールとappsscript.json、roomdeleteは変更なし。今回のためにuploadfirebaseやroomdeleteを実行する必要はありません。
+公開サーバーの内容は直接取得していません。すでに2.69.4まで反映してあればGAS再反映は不要。
+新規導入や以前の版から更新する場合は、上の設定手順に従ってください。
+携帯で1本貼付する場合はランキングとチャット用_Code.txt。分割配置と同時使用しないでください。

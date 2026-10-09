@@ -176,8 +176,8 @@
 
           try {
             await firebase.database()
-              .ref("rooms/" + currentRoomCode + "/players/" + currentUser.uid + "/ready")
-              .set(!me.ready);
+              .ref("rooms/" + currentRoomCode + "/players/" + currentUser.uid)
+              .update({ready: !me.ready, updatedAt: firebase.database.ServerValue.TIMESTAMP});
           } catch (err) {
             console.error(err);
             setMessage("準備状態の更新に失敗しました。");
@@ -197,6 +197,7 @@
             const roomRef = firebase.database().ref("rooms/" + currentRoomCode);
             const updates = {
               status: "countdown",
+              updatedAt: firebase.database.ServerValue.TIMESTAMP,
               startAt,
               attacks: null,
               results: null,

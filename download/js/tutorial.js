@@ -24,36 +24,6 @@ function tutorialBaseBoard(){
   Array.from({length:COLS},(_,c)=>make((r*2+c*3)%COLORS))
  );
 }
-function tutorialBreakAllMatches(){
- // チュートリアルでは説明対象以外に3個以上の並びを残さない。
- for(let guard=0;guard<40;guard++){
-  const match=scanMatches();
-  if(!match || match.cells.size===0)return;
-  let fixed=false;
-  const keys=[...match.cells];
-  for(const key of keys){
-   const [r,c]=parseK(key);
-   const t=B[r]?.[c];
-   if(!t || t.special || isBlocked(t) || isTrigger(t) || t.color==null)continue;
-   const original=t.color;
-   let bestColor=original, bestSize=match.cells.size;
-   for(let d=1;d<COLORS;d++){
-    t.color=(original+d)%COLORS;
-    const next=scanMatches();
-    const size=next.cells.size;
-    if(!next.cells.has(key) && size<bestSize){
-     bestColor=t.color;
-     bestSize=size;
-     if(size===0)break;
-    }
-   }
-   t.color=bestColor;
-   if(bestColor!==original){fixed=true;break;}
-   t.color=original;
-  }
-  if(!fixed)return;
- }
-}
 let tutorialSpawnPlan=null;
 
 function tutorialCloneTile(t){
@@ -266,18 +236,6 @@ async function tutorialAutoSwap(a,b,token){
  if(token!==tutorialToken)return false;
  if(!await tutorialWait(650,token))return false;
  return token===tutorialToken;
-}
-function tutorialCleanSpecialBoard(special, pos={r:3,c:4}, other=null){
- tutorialBaseBoard();
- B[pos.r][pos.c]=make(null,special);
- if(other){
-  B[other.r][other.c]=make(
-   other.color===undefined ? ((other.r*2+other.c*3)%COLORS) : other.color,
-   other.special||null
-  );
- }
- tutorialResetState();
- tutorialShowBoard();
 }
 function tutorialComboBoard(leftSpecial,rightSpecial){
  tutorialBaseBoard();
