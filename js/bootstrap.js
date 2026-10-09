@@ -51,6 +51,7 @@
         const credential = await firebase.auth().signInAnonymously();
         const user = credential.user;
         currentUser = user;
+        window.MonpatchChat?.watchBan(user);
 
         onlineStatus.textContent = "オンライン";
         onlineStatus.className = "value status ok";
@@ -75,8 +76,7 @@
             console.error(err);
             setMessage("部屋作成に失敗しました: " + (err && err.message ? err.message : err));
           } finally {
-            createRoomBtn.disabled = false;
-            joinRoomBtn.disabled = false;
+            refreshEntryButtons();
           }
         });
 
@@ -97,8 +97,7 @@
             console.error(err);
             setMessage("参加に失敗しました: " + (err && err.message ? err.message : err));
           } finally {
-            createRoomBtn.disabled = false;
-            joinRoomBtn.disabled = false;
+            refreshEntryButtons();
           }
         });
 
@@ -170,10 +169,10 @@
 
         readyBtn.addEventListener("click", async () => {
           if (!currentRoomCode || !currentRoomData || !currentUser) return;
-          if (currentRoomData.status !== "waiting") return;
+          if (!["waiting", "results"].includes(currentRoomData.status)) return;
 
           const me = currentRoomData.players && currentRoomData.players[currentUser.uid];
-          if (!me) return;
+          if (!me || (currentRoomData.status === "results" && me.returned !== true)) return;
 
           try {
             await firebase.database()
@@ -188,7 +187,7 @@
         startBattleBtn.addEventListener("click", async () => {
           if (!currentRoomCode || !currentRoomData || !currentUser) return;
           if (!isHost(currentRoomData)) return;
-          if (currentRoomData.status !== "waiting") return;
+          if (!["waiting", "results"].includes(currentRoomData.status)) return;
           if (playerCount(currentRoomData) < 2 || playerCount(currentRoomData) > 6) return;
           if (!allPlayersReady(currentRoomData)) return;
 

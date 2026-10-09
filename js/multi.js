@@ -12,6 +12,7 @@
       if (entries.length < 2) return false;
 
       return entries.every(([uid, p]) => {
+        if (room.status === "results" && p?.returned !== true) return false;
         if (uid === room.hostUid) return true;
         return !!(p && p.ready === true);
       });
@@ -115,7 +116,7 @@
       if (!currentUser || !room) return;
 
       const me = room.players && room.players[currentUser.uid];
-      const waiting = room.status === "waiting";
+      const waiting = room.status === "waiting" || (room.status === "results" && me?.returned === true);
       const total = playerCount(room);
       const readyTotal = room.players
         ? Object.entries(room.players).filter(([uid, p]) => uid === room.hostUid || (p && p.ready === true)).length
@@ -135,7 +136,7 @@
           waiting &&
           total >= 2 &&
           total <= 6 &&
-          readyTotal === total;
+          readyTotal === total && allPlayersReady(room);
 
         startBattleBtn.disabled = !canStart;
       } else {
@@ -464,9 +465,11 @@
     }
 
     function showBattleResults(room) {
-      if (!room?.results) return;
+      if (!room?.results || room.players?.[currentUser?.uid]?.returned === true) return;
       resultsShownForRound = true;
       stopBattleRuntime();
+      cancelBattleDisconnect();
+      window.MonpatchChat?.place("results");
 
       const rows = Object.entries(room.results)
         .sort((a,b)=>(Number(a[1]?.rank)||999)-(Number(b[1]?.rank)||999));
@@ -487,6 +490,29 @@
       battleResultOverlay.classList.add("show");
       battleResultOverlay.setAttribute("aria-hidden","false");
     }
+
+    async function returnToRoomLobby() {
+      if (!currentRoomCode || !currentUser) return;
+      const button = document.getElementById("battleLobbyBtn");
+      const status = document.getElementById("battleResultStatus");
+      button.disabled = true; status.textContent = "ロビーへ戻っています…";
+      try {
+        await cancelBattleDisconnect();
+        await firebase.database().ref(`rooms/${currentRoomCode}/players/${currentUser.uid}`).update({returned: true, ready: false});
+        stopBattleRuntime();
+        battleStarted = false;
+        battleResultOverlay.classList.remove("show");
+        battleResultOverlay.setAttribute("aria-hidden", "true");
+        battleGameScreen.classList.remove("show");
+        battleGameScreen.setAttribute("aria-hidden", "true");
+        window.MonpatchChat?.place("lobby");
+        showMultiPage(); updateLobbyButtons(currentRoomData);
+        setMessage("同じ部屋のロビーへ戻りました。準備がそろったら再戦できます。");
+        status.textContent = "";
+      } catch (error) { status.textContent = "ロビーへ戻れませんでした。接続を確認して再度お試しください。"; }
+      finally { button.disabled = false; }
+    }
+    document.getElementById("battleLobbyBtn")?.addEventListener("click", returnToRoomLobby);
 
     async function returnToOverallTop() {
       // 内蔵ゲームを停止
@@ -657,8 +683,10 @@
 
       currentRoomRef = firebase.database().ref("rooms/" + code);
       currentRoomRef.on("value", snap => {
+        if (currentRoomCode !== code) return;
         if (!snap.exists()) {
           currentRoomData = null;
+          resetLobbyUI();
           setMessage("この部屋は削除されました。");
           return;
         }
@@ -666,11 +694,18 @@
         const room = snap.val();
         currentRoomData = room;
 
+        window.MonpatchChat?.start(code, room);
         renderPlayers(room);
         updateLobbyButtons(room);
         renderBattleHud(room);
 
         if (room.status === "countdown" && Number(room.startAt)) {
+          if (resultsShownForRound) {
+            resultsShownForRound = false; battleStarted = false;
+            battleResultOverlay.classList.remove("show");
+            battleResultOverlay.setAttribute("aria-hidden", "true");
+            window.MonpatchChat?.place("lobby");
+          }
           armBattleDisconnect(code).catch(e => console.error("disconnect guard failed", e));
           runCountdown(Number(room.startAt));
         } else if (room.status === "playing") {
@@ -690,8 +725,14 @@
             battleGameScreen.classList.remove("show");
             battleGameScreen.setAttribute("aria-hidden","true");
             battleStarted = false;
+            window.MonpatchChat?.place("lobby");
           }
         }
+      }, () => {
+        if (currentRoomCode !== code) return;
+        resetLobbyUI();
+        showMultiPage();
+        setMessage("ルームへの接続が拒否されました。利用制限または通信設定を確認してください。");
       });
     }
 
@@ -707,6 +748,7 @@
     }
 
     async function createUniqueRoom(uid) {
+      await window.MonpatchChat?.assertAllowed();
       const db = firebase.database();
 
       for (let attempt = 0; attempt < 20; attempt++) {
@@ -751,6 +793,7 @@
     }
 
     async function joinRoom(code, uid) {
+      await window.MonpatchChat?.assertAllowed();
       if (!/^\d{6}$/.test(code)) {
         throw new Error("部屋番号は6桁の数字で入力してください。");
       }
@@ -886,6 +929,7 @@
     }
 
     function resetLobbyUI() {
+      window.MonpatchChat?.stop();
       cancelBattleDisconnect();
       joinRoomArea?.classList.remove("hiddenByRoom");
       if (currentRoomRef) {

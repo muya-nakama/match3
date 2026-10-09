@@ -756,7 +756,7 @@ body{
 }
 </style>
 
-<link rel="stylesheet" href="js/icon-cropper.css?v=2.68.2">
+<link rel="stylesheet" href="js/icon-cropper.css?v=2.69.1">
 <style>[hidden]{display:none!important}.profileNameEdit{margin-top:8px!important;font-size:12px!important;padding:8px 12px!important}
 .playerNameSetup.hasSavedName{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin:10px 0 12px}
 .hasSavedName .playerNameSetupLabel{display:none}
@@ -776,13 +776,20 @@ body{
 .soundNumber{width:54px;height:44px;border:1px solid #526174;border-radius:9px;background:#101720;color:#fff;text-align:center;font-size:17px}
 .environmentNote{font-size:13px;line-height:1.7;color:var(--sub)}
 </style>
+<style>
+.roomChat[hidden]{display:none}.roomChat{margin-top:18px;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px;background:#101823}
+.chatMessages{height:170px;overflow:auto;overscroll-behavior:contain;margin:9px 0;padding:6px;font-size:13px;color:#eaf0f8}
+.chatMessage{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)}.chatMeta{font-size:11px;color:#aeb8c5;margin-bottom:3px;overflow-wrap:anywhere}.chatText{white-space:pre-wrap;overflow-wrap:anywhere}
+.chatAvatar{width:30px;height:30px;flex:0 0 30px;border-radius:50%;overflow:hidden;background:#263444;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}.chatAvatar img{width:100%;height:100%;object-fit:cover}.chatBody{flex:1;min-width:0}.chatPending{display:block}.battleResultActions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.battleResultActions .battleReturnBtn{font-size:14px}.battleResultCard .chatMessages{height:clamp(110px,23vh,190px)}
+.chatForm{display:flex;gap:8px}.chatForm input{flex:1;min-width:0;padding:11px;border:1px solid #39485a;border-radius:9px;background:#0b1016;color:#fff;font-size:16px}.chatForm button{width:auto;min-width:64px;margin:0;padding:10px}.chatStatus{font-size:11px;color:#aeb8c5;margin-top:8px;line-height:1.5}
+</style>
 </head>
 <body>
   <main class="app">
     <section id="topPage" class="pageView active">
       <section class="card">
       <h1>モンパッチ</h1>
-      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.68.2</div>
+      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.69.1</div>
       <div class="sub">
         シングルモードとオンライン対戦モードが遊べるマッチパズル。
       </div>
@@ -829,6 +836,8 @@ body{
         <div>背景・ミッション枠素材：<a href="https://sozaino.site/kiyaku" target="_blank" rel="noopener noreferrer">OKUMONO</a></div>
         <div>BGM：<a href="https://opentracks.com/bgm/detail/1021" target="_blank" rel="noopener noreferrer">パステルハウス / かずち（OpenTracks）</a></div>
         <div>SE：<a href="https://tnosite.com/" target="_blank" rel="noopener noreferrer">Tスタ</a></div>
+        <div>作者X：@muya1127</div>
+        <div>※Xは普段あまり見ていません。ご連絡にすぐ気付けないことがあります。</div>
         <div>本作は練習目的の非公式ファンメイド作品です。各サービス・運営会社とは関係ありません。</div>
       </div>
 
@@ -864,6 +873,16 @@ body{
         <div id="playersList" class="playerGrid"></div>
       </div>
 
+      <div id="roomChatLobby"><section id="roomChat" class="roomChat" hidden aria-label="ルームチャット">
+        <div class="lobbySummary"><span>ルームチャット</span><span id="roomChatPhase">待機中</span></div>
+        <div id="roomChatMessages" class="chatMessages" role="log" aria-live="polite" aria-relevant="additions text"></div>
+        <form id="roomChatForm" class="chatForm">
+          <input id="roomChatInput" type="text" maxlength="400" placeholder="メッセージ（200文字まで）" aria-label="チャット本文" autocomplete="off" disabled>
+          <button id="roomChatSend" type="submit" disabled>送信</button>
+        </form>
+        <div id="roomChatStatus" class="chatStatus" role="status"></div>
+      </section>
+      </div>
       <button id="readyBtn" type="button" disabled style="display:none">準備</button>
       <div class="lobbyActionRow">
         <button id="leaveRoomBtn" type="button" disabled style="display:none">ゲーム終了</button>
@@ -910,7 +929,12 @@ body{
     <div class="battleResultCard">
       <div class="battleResultTitle">対戦結果</div>
       <div id="battleResultRows" class="battleResultRows"></div>
-      <button id="battleReturnBtn" class="battleReturnBtn" type="button">総合トップへ</button>
+      <div id="battleResultChat"></div>
+      <div class="battleResultActions">
+        <button id="battleLobbyBtn" class="battleReturnBtn" type="button">ロビーへ戻る</button>
+        <button id="battleReturnBtn" class="battleReturnBtn" type="button">トップへ戻る</button>
+      </div>
+      <div id="battleResultStatus" class="chatStatus" role="status"></div>
     </div>
   </div>
 
@@ -922,17 +946,18 @@ body{
  <p class="environmentNote">変更は自動保存され、シングル・マルチの両方に反映されます。</p>
  <button id="environmentClose" type="button">閉じる</button>
 </dialog>
-  <script src="js/audio-settings.js?v=2.68.2"></script>
-  <script src="js/environment.js?v=2.68.2"></script>
+  <script src="js/audio-settings.js?v=2.69.1"></script>
+  <script src="js/environment.js?v=2.69.1"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script src="js/player-identity.js?v=2.68.2"></script>
-  <script src="js/icon-cropper.js?v=2.68.2"></script>
-  <script src="js/app.js?v=2.68.2"></script>
-  <script src="js/profile.js?v=2.68.2"></script>
-  <script src="js/multi.js"></script>
-  <script src="js/single.js?v=2.68.2"></script>
-  <script src="js/bootstrap.js?v=2.68.2"></script>
+  <script src="js/player-identity.js?v=2.69.1"></script>
+  <script src="js/icon-cropper.js?v=2.69.1"></script>
+  <script src="js/app.js?v=2.69.1"></script>
+  <script src="js/profile.js?v=2.69.1"></script>
+  <script src="js/chat.js?v=2.69.1"></script>
+  <script src="js/multi.js?v=2.69.1"></script>
+  <script src="js/single.js?v=2.69.1"></script>
+  <script src="js/bootstrap.js?v=2.69.1"></script>
 </body>
 </html>
