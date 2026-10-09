@@ -96,7 +96,7 @@
 
         if (gameTitleBtn) {
           const topBtn = gameTitleBtn.cloneNode(true);
-          topBtn.textContent = "総合トップへ";
+          topBtn.textContent = "トップへ";
           topBtn.style.display = "";
           gameTitleBtn.replaceWith(topBtn);
           topBtn.addEventListener("click", (ev) => {

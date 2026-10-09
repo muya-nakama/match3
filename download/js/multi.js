@@ -503,7 +503,7 @@
         }
       } catch(e) {}
 
-      // 対戦中/対戦結果から戻る場合は部屋から退出して総合トップへ。
+      // 対戦中/対戦結果から戻る場合は部屋から退出してトップへ。
       if (currentRoomCode && currentUser) {
         const leavingCode = currentRoomCode;
         try {

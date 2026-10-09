@@ -571,7 +571,7 @@ body{
 .miniProfileName{font-size:11px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .pageBackBtn{width:auto;margin:0 0 10px;padding:9px 12px;font-size:12px;}
 #multiPage .connectionCompact{margin-top:0;}
-#singleProfileFloat{position:fixed;right:10px;top:8px;z-index:10030;display:none;}
+#singleProfileFloat{position:fixed;right:10px;top:8px;z-index:10035;display:flex;width:auto;min-height:44px;margin:0;color:#fff;cursor:pointer;}
 #singleProfileFloat.show{display:flex;}
 #singleTopBackBtn{
   position:fixed;
@@ -756,7 +756,7 @@ body{
 }
 </style>
 
-<link rel="stylesheet" href="js/icon-cropper.css?v=2.69.2">
+<link rel="stylesheet" href="js/icon-cropper.css?v=2.69.3">
 <style>[hidden]{display:none!important}.profileNameEdit{margin-top:8px!important;font-size:12px!important;padding:8px 12px!important}
 .playerNameSetup.hasSavedName{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin:10px 0 12px}
 .hasSavedName .playerNameSetupLabel{display:none}
@@ -783,13 +783,22 @@ body{
 .chatAvatar{width:30px;height:30px;flex:0 0 30px;border-radius:50%;overflow:hidden;background:#263444;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}.chatAvatar img{width:100%;height:100%;object-fit:cover}.chatBody{flex:1;min-width:0}.chatPending{display:block}.battleResultActions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.battleResultActions .battleReturnBtn{font-size:14px}.battleResultCard .chatMessages{height:clamp(110px,23vh,190px)}
 .chatForm{display:flex;gap:8px}.chatForm input{flex:1;min-width:0;padding:11px;border:1px solid #39485a;border-radius:9px;background:#0b1016;color:#fff;font-size:16px}.chatForm button{width:auto;min-width:64px;margin:0;padding:10px}.chatStatus{font-size:11px;color:#aeb8c5;margin-top:8px;line-height:1.5}
 </style>
+<style>
+.app{padding-top:58px}
+.profileDialog{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,10,20,.8)}
+.profilePanel{width:min(100%,440px);max-height:88dvh;overflow:auto;border-radius:18px;padding:18px;background:#101b2b;border:1px solid #39485a}
+.profileHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}.profileHeader h2{margin:0;font-size:20px}.profileHeader button{width:auto;margin:0;padding:10px 14px}
+.profilePanel .playerNameSetup,.profilePanel .avatarSetup{margin-top:18px}
+.profilePanel .playerNameSetupRow{display:flex;gap:8px}.profilePanel .playerNameSetupInput{min-width:0;flex:1}.profilePanel .playerNameSetupSave{width:auto;margin:0}
+#singleProfileFloat:focus-visible{outline:2px solid #96c8ff;outline-offset:3px}
+</style>
 </head>
 <body>
   <main class="app">
     <section id="topPage" class="pageView active">
       <section class="card">
       <h1>モンパッチ</h1>
-      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.69.2</div>
+      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.69.3</div>
       <div class="sub">
         シングルモードとオンライン対戦モードが遊べるマッチパズル。
       </div>
@@ -799,29 +808,6 @@ body{
         <span id="onlineStatus" class="status warn">接続中…</span>
         <span class="connectionSep">UID:</span>
         <span id="uid">—</span>
-      </div>
-
-      <div class="playerNameSetup">
-        <div class="playerNameSetupLabel">プレイヤーネーム</div>
-        <div id="profileNameEditor" class="playerNameSetupRow">
-          <input id="battlePlayerNameInput" class="playerNameSetupInput" maxlength="16" autocomplete="nickname" placeholder="名前を入力">
-          <button id="battlePlayerNameSave" class="playerNameSetupSave" type="button">保存</button>
-        </div>
-        <button id="profileNameEdit" class="profileNameEdit" type="button" hidden>名前を変更</button>
-        <div id="battlePlayerNameStatus" class="playerNameSetupStatus"></div>
-      </div>
-
-      <div class="avatarSetup">
-        <div class="avatarSetupLabel">プレイヤーアイコン</div>
-        <div class="avatarSetupRow">
-          <div id="battleAvatarPreview" class="avatarPreview">未設定</div>
-          <div class="avatarSetupActions">
-            <input id="battleAvatarInput" class="avatarFileInput" type="file" accept="image/jpeg,image/png,image/webp">
-            <button id="battleAvatarRemove" class="avatarRemoveBtn" type="button">画像を解除</button>
-          </div>
-        </div>
-        <div id="battleAvatarStatus" class="avatarStatus">未設定時は名前の先頭2文字を表示します</div>
-        <div class="avatarStatus">ランキング登録時に名前・アイコン・匿名IDを送信します。</div>
       </div>
 
       <div class="modeChoice">
@@ -903,16 +889,44 @@ body{
       <section class="card">
         <div class="pageHeader">
           <div class="pageHeaderTitle">マルチ対戦</div>
-          <div id="multiMiniProfile" class="miniProfile"></div>
+
         </div>
         <div id="multiLobbyMount"></div>
       </section>
     </section>
   </main>
 
-  <button id="singleTopBackBtn" type="button">総合トップへ</button>
-  <button id="multiTopBackFixed" type="button">総合トップへ</button>
-  <div id="singleProfileFloat" class="miniProfile"></div>
+  <button id="singleTopBackBtn" type="button">トップへ</button>
+  <button id="multiTopBackFixed" type="button">トップへ</button>
+  <button id="singleProfileFloat" class="miniProfile" type="button" aria-label="プロフィールを編集" aria-haspopup="dialog" aria-expanded="false"></button>
+  <div id="profileDialog" class="profileDialog" role="dialog" aria-modal="true" aria-labelledby="profileDialogTitle" hidden>
+    <section class="profilePanel">
+      <div class="profileHeader"><h2 id="profileDialogTitle">プロフィール</h2><button id="profileClose" type="button">閉じる</button></div>
+      <div class="playerNameSetup">
+        <div class="playerNameSetupLabel">プレイヤーネーム</div>
+        <div id="profileNameEditor" class="playerNameSetupRow">
+          <input id="battlePlayerNameInput" class="playerNameSetupInput" maxlength="16" autocomplete="nickname" placeholder="名前を入力">
+          <button id="battlePlayerNameSave" class="playerNameSetupSave" type="button">保存</button>
+        </div>
+        <button id="profileNameEdit" class="profileNameEdit" type="button" hidden>名前を変更</button>
+        <div id="battlePlayerNameStatus" class="playerNameSetupStatus"></div>
+      </div>
+
+      <div class="avatarSetup">
+        <div class="avatarSetupLabel">プレイヤーアイコン</div>
+        <div class="avatarSetupRow">
+          <div id="battleAvatarPreview" class="avatarPreview">未設定</div>
+          <div class="avatarSetupActions">
+            <input id="battleAvatarInput" class="avatarFileInput" type="file" accept="image/jpeg,image/png,image/webp">
+            <button id="battleAvatarRemove" class="avatarRemoveBtn" type="button">画像を解除</button>
+          </div>
+        </div>
+        <div id="battleAvatarStatus" class="avatarStatus">未設定時は名前の先頭2文字を表示します</div>
+        <div class="avatarStatus">ランキング登録時に名前・アイコン・匿名IDを送信します。</div>
+      </div>
+
+    </section>
+  </div>
   <section id="battleGameScreen" class="battleGameScreen" aria-hidden="true">
     <div class="battleTopBar">
       <span id="gameModeTitle">モンパッチ</span>
@@ -952,18 +966,18 @@ body{
  <p class="environmentNote">変更は自動保存され、シングル・マルチの両方に反映されます。</p>
  <button id="environmentClose" type="button">閉じる</button>
 </dialog>
-  <script src="js/audio-settings.js?v=2.69.2"></script>
-  <script src="js/environment.js?v=2.69.2"></script>
+  <script src="js/audio-settings.js?v=2.69.3"></script>
+  <script src="js/environment.js?v=2.69.3"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script src="js/player-identity.js?v=2.69.2"></script>
-  <script src="js/icon-cropper.js?v=2.69.2"></script>
-  <script src="js/app.js?v=2.69.2"></script>
-  <script src="js/profile.js?v=2.69.2"></script>
-  <script src="js/chat.js?v=2.69.2"></script>
-  <script src="js/multi.js?v=2.69.2"></script>
-  <script src="js/single.js?v=2.69.2"></script>
-  <script src="js/bootstrap.js?v=2.69.2"></script>
+  <script src="js/player-identity.js?v=2.69.3"></script>
+  <script src="js/icon-cropper.js?v=2.69.3"></script>
+  <script src="js/app.js?v=2.69.3"></script>
+  <script src="js/profile.js?v=2.69.3"></script>
+  <script src="js/chat.js?v=2.69.3"></script>
+  <script src="js/multi.js?v=2.69.3"></script>
+  <script src="js/single.js?v=2.69.3"></script>
+  <script src="js/bootstrap.js?v=2.69.3"></script>
 </body>
 </html>

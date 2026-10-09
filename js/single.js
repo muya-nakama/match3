@@ -25,7 +25,7 @@
 
       try {
         battleLoadAttempt++;
-        const suffix = `?v=2.69.2&retry=${isRetry ? battleLoadAttempt : 0}`;
+        const suffix = `?v=2.69.3&retry=${isRetry ? battleLoadAttempt : 0}`;
         // トップ表示中から裏で読み込み、シングル開始・対戦開始時の端末差を抑える。
         battleGameFrame.src = `game.html${suffix}`;
         battleLoadTimer = setTimeout(() => {
@@ -96,7 +96,7 @@
 
         if (gameTitleBtn) {
           const topBtn = gameTitleBtn.cloneNode(true);
-          topBtn.textContent = "総合トップへ";
+          topBtn.textContent = "トップへ";
           topBtn.style.display = "";
           gameTitleBtn.replaceWith(topBtn);
           topBtn.addEventListener("click", (ev) => {

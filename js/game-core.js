@@ -76,7 +76,7 @@ document.addEventListener("visibilitychange",()=>{
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.69.2";
+const GAME_VERSION="2.69.3";
 let rankingMinutes=3,rankingInterference=false,rankingJsonpSeq=0;
 
 const titleScreen=document.getElementById("titleScreen");
@@ -346,6 +346,14 @@ function refreshAudioSettings(){
  bgmVolume=window.MonpatchAudio.get("bgm")/100;
  seVolume=window.MonpatchAudio.get("se")/100;
  bgmAudio.volume=AUDIO_VOL.bgm*bgmVolume;
+ for(const kind of ["bgm","se"]){
+  const button=document.getElementById(kind==="bgm"?"gameBgmToggle":"gameSeToggle");
+  if(!button)continue;
+  const on=window.MonpatchAudio.get(kind)>0;
+  button.textContent=`${kind.toUpperCase()} ${on?"オン":"オフ"}`;
+  button.setAttribute("aria-pressed",String(on));
+  button.classList.toggle("muted",!on);
+ }
 }
 window.refreshAudioSettings=refreshAudioSettings;
 window.addEventListener("storage",refreshAudioSettings);
@@ -361,6 +369,12 @@ function openGameMenu(){
 function closeGameMenu(){
  gameMenuOverlay.classList.remove("show");
  gameMenuOverlay.setAttribute("aria-hidden","true");
+}
+for(const kind of ["bgm","se"]){
+ document.getElementById(kind==="bgm"?"gameBgmToggle":"gameSeToggle")?.addEventListener("click",()=>{
+  window.MonpatchAudio.toggleMute(kind);
+  try{window.parent.dispatchEvent(new CustomEvent("monpatch-audio-change"));}catch(_){}
+ });
 }
 gameMenuBtn?.addEventListener("click",openGameMenu);
 gameMenuClose?.addEventListener("click",()=>{playDecision();closeGameMenu();});
