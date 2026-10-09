@@ -63,7 +63,7 @@ function stopBgm(){
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.69.0";
+const GAME_VERSION="2.68.2";
 let rankingMinutes=3,rankingInterference=false,rankingJsonpSeq=0;
 
 const titleScreen=document.getElementById("titleScreen");

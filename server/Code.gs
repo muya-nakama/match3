@@ -1,5 +1,5 @@
 /*
- * モンパッチ 2.69 ランキング＋チャット。既存のスプレッドシートに紐づくApps Scriptへ配置。
+ * モンパッチ 2.67 ランキング。既存のスプレッドシートに紐づくApps Scriptへ配置。
  * 旧タブは変更せず、RankingV2・PlayersV2を自動作成する。
  * IDはブラウザ単位の匿名識別子。本人認証・不正スコア防止は提供しない。
  */
@@ -89,14 +89,11 @@ function doPost(e) {
   let result,requestId;
   try {
     requestId=id_(p.requestId);
-    const chat = p.action === 'chatSend';
-    const uid = chat ? chatUid_(p.idToken) : null;
     const lock=LockService.getScriptLock();lock.waitLock(20000);
     try {
       const cache=CacheService.getScriptCache(),key='submit:'+requestId;
       const cached=cache.get(key);
-      const previous=cached?JSON.parse(cached):null;
-      result=chat ? chatSend_(p,uid) : previous || submit_(p);
+      result=cached?JSON.parse(cached):submit_(p);
       cache.put(key,JSON.stringify(result),600);
     }finally{lock.releaseLock();}
   }catch(err){
@@ -108,9 +105,7 @@ function doPost(e) {
 function doGet(e) {
   const p=e.parameter||{};let result;
   try {
-    if(p.action==='chatInfo'){
-      result={ok:true,chatProtocol:1,ready:PropertiesService.getScriptProperties().getProperty('CHAT_READY')==='1'};
-    }else if(p.action==='status'){
+    if(p.action==='status'){
       const cached=CacheService.getScriptCache().get('submit:'+id_(p.requestId));
       result=cached?JSON.parse(cached):{ok:true,pending:true,schema:2};
     }else if(p.action==='submit'){

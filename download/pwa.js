@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const APP_VERSION = "2.69.0";
+  const APP_VERSION = "2.68.2";
   const statusEl = document.getElementById("pwaStatus");
   const multiBtn = document.getElementById("multiModeBtn");
   const installBtn = document.getElementById("installPwaBtn");

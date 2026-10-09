@@ -55,9 +55,8 @@
       const hasName = !!getLocalPlayerName();
       const authReady = !!currentUser;
       const gameReady = !!battleFrameReady;
-      const allowed = !window.MonpatchChat?.isBlocked();
-      createRoomBtn.disabled = !(hasName && authReady && gameReady && allowed);
-      joinRoomBtn.disabled = !(hasName && authReady && gameReady && allowed);
+      createRoomBtn.disabled = !(hasName && authReady && gameReady);
+      joinRoomBtn.disabled = !(hasName && authReady && gameReady);
     }
 
     function saveBattlePlayerName() {
@@ -73,7 +72,6 @@
     function roomPlayerData(name, joinOrder) {
       return {
         name,
-        playerId: window.MonpatchIdentity.getId(),
         avatarData: getLocalAvatar() || "",
         ready: false,
         connected: true,
