@@ -1,3 +1,7 @@
+    let battleDisconnectGeneration = 0;
+    let recoveringBattleConnection = false;
+    let disconnectFinalizeTimer = null;
+    let battleSpectating = false;
     function playerCount(room) {
       return room && room.players ? Object.keys(room.players).length : 0;
     }
@@ -20,6 +24,8 @@
 
     async function armBattleDisconnect(code=currentRoomCode) {
       if (!code || !currentUser) return;
+      if (currentRoomData?.players?.[currentUser.uid]?.finished === true || (battleStarted && finalScoreSubmitted)) return;
+      const generation = battleDisconnectGeneration;
       const key = `${code}/${currentUser.uid}`;
       if (battleDisconnectArmedFor === key) return;
 
@@ -28,22 +34,78 @@
       }
 
       battleDisconnectRef = firebase.database().ref(`rooms/${code}/players/${currentUser.uid}`);
-      await battleDisconnectRef.onDisconnect().update({
+      const disconnectRef = battleDisconnectRef;
+      await disconnectRef.onDisconnect().update({
         forfeited: true,
+        disconnectReason: "connection",
         finished: true,
         score: -1,
         finalScore: -1,
         disconnectedAt: firebase.database.ServerValue.TIMESTAMP
       });
+      if (generation !== battleDisconnectGeneration) {
+        await disconnectRef.onDisconnect().cancel();
+        return;
+      }
       battleDisconnectArmedFor = key;
     }
 
-    async function cancelBattleDisconnect() {
+    async function cancelBattleDisconnect(requireSuccess=false) {
+      battleDisconnectGeneration++;
       if (battleDisconnectRef) {
-        try { await battleDisconnectRef.onDisconnect().cancel(); } catch (e) {}
+        try { await battleDisconnectRef.onDisconnect().cancel(); } catch (e) { if (requireSuccess) throw e; }
       }
       battleDisconnectRef = null;
       battleDisconnectArmedFor = "";
+    }
+
+    function renderSpectatorScores(room) {
+      const rows = document.getElementById("battleSpectatorScores");
+      if (!rows) return;
+      rows.replaceChildren();
+      Object.values(room.players || {}).forEach(player => {
+        const row = document.createElement("p");
+        row.textContent = `${player.name || "Player"}：${player.forfeited ? "リタイア" : Number(player.score || 0).toLocaleString("ja-JP")}`;
+        rows.appendChild(row);
+      });
+    }
+    function resetSpectating() {
+      battleSpectating = false;
+      document.getElementById("battleSpectatorPanel").hidden = true;
+      battleGameFrame.hidden = false;
+    }
+    function enterSpectatorMode(room) {
+      if (!battleSpectating) {
+        battleSpectating = true;
+        battleStarted = false;
+        stopBattleRuntime();
+        cancelBattleDisconnect();
+        try { battleGameFrame.contentWindow.eval("stopBgm();stopTimer();stopIdleWatch();gameRunning=false;pendingFinish=false;"); } catch (_) {}
+      }
+      battleGameFrame.hidden = true;
+      battleLoadOverlay.classList.add("hidden");
+      document.getElementById("battleSpectatorPanel").hidden = false;
+      battleGameScreen.classList.add("show");
+      battleGameScreen.setAttribute("aria-hidden", "false");
+      renderSpectatorScores(room);
+    }
+    document.getElementById("battleSpectatorTopBtn")?.addEventListener("click", returnToOverallTop);
+
+    async function recoverBattleConnection(code) {
+      if (recoveringBattleConnection) return;
+      recoveringBattleConnection = true;
+      try {
+        await cancelBattleDisconnect(true);
+        await firebase.database().ref(`rooms/${code}/players/${currentUser.uid}`).update({
+          forfeited: false, finished: false, finalScore: null,
+          score: battleStarted ? Number(safeFrameEval("score", 0)) || 0 : 0,
+          disconnectedAt: null, disconnectReason: null
+        });
+        if (currentRoomCode === code) await armBattleDisconnect(code);
+      } catch (error) {
+        console.error("battle reconnect failed", error);
+        setMessage("対戦への再接続を確認しています…");
+      } finally { recoveringBattleConnection = false; }
     }
 
     function isHost(room) {
@@ -346,6 +408,7 @@
     }
 
     function stopBattleRuntime() {
+      if (disconnectFinalizeTimer) { clearTimeout(disconnectFinalizeTimer); disconnectFinalizeTimer = null; }
       if (scoreSyncTimer) { clearInterval(scoreSyncTimer); scoreSyncTimer = null; }
       if (battleStateTimer) { clearInterval(battleStateTimer); battleStateTimer = null; }
       if (attackFlushTimer) { clearInterval(attackFlushTimer); attackFlushTimer = null; }
@@ -378,6 +441,7 @@
       lastSyncedScore = sc;
 
       try {
+        await cancelBattleDisconnect(true);
         await firebase.database()
           .ref(`rooms/${currentRoomCode}/players/${currentUser.uid}`)
           .update({
@@ -416,12 +480,27 @@
       const entries = Object.entries(room.players);
       if (entries.length < 2 || !entries.every(([,p]) => p && p.finished === true)) return;
 
+      // A brief reconnect must not finalize a forfeiture before the client can resume.
+      const wait = Math.max(0, ...entries.map(([,p]) =>
+        p?.disconnectReason === "connection" && p.forfeited === true
+          ? 10000 - (Date.now() + serverTimeOffset - Number(p.disconnectedAt || 0)) : 0));
+      if (wait > 0) {
+        if (disconnectFinalizeTimer) clearTimeout(disconnectFinalizeTimer);
+        const code = currentRoomCode;
+        disconnectFinalizeTimer = setTimeout(() => {
+          disconnectFinalizeTimer = null;
+          if (currentRoomCode === code) maybeFinalizeResults(currentRoomData);
+        }, wait + 50);
+        return;
+      }
       const roomRef = firebase.database().ref(`rooms/${currentRoomCode}`);
       try {
         await roomRef.transaction(current => {
           if (!current || current.status !== "playing" || !current.players) return;
           const ps = Object.entries(current.players);
           if (ps.length < 2 || !ps.every(([,p]) => p && p.finished === true)) return;
+          if (ps.some(([,p]) => p?.disconnectReason === "connection" && p.forfeited === true &&
+              Date.now() + serverTimeOffset - Number(p.disconnectedAt || 0) < 10000)) return;
 
           const sorted = ps.slice().sort((a,b) => {
             const ar = a[1]?.forfeited === true;
@@ -500,6 +579,7 @@
         await cancelBattleDisconnect();
         await firebase.database().ref(`rooms/${currentRoomCode}/players/${currentUser.uid}`).update({returned: true, ready: false});
         stopBattleRuntime();
+        resetSpectating();
         battleStarted = false;
         battleResultOverlay.classList.remove("show");
         battleResultOverlay.setAttribute("aria-hidden", "true");
@@ -577,7 +657,7 @@
     }
 
     async function enterBattleGame(startAt) {
-      if (battleStarted) return;
+      if (battleStarted || battleSpectating) return;
       battleStarted = true;
 
       configureFrameForBattleMode();
@@ -693,6 +773,17 @@
 
         const room = snap.val();
         currentRoomData = room;
+        const me = room.players?.[currentUser?.uid];
+        if (["countdown", "playing"].includes(room.status) && me?.forfeited === true) {
+          const elapsed = Date.now() + serverTimeOffset - Number(me.disconnectedAt || 0);
+          if (!battleSpectating && me.disconnectReason === "connection" && elapsed < 10000) {
+            recoverBattleConnection(code);
+            return;
+          }
+          enterSpectatorMode(room);
+          maybeFinalizeResults(room);
+          return;
+        }
 
         window.MonpatchChat?.start(code, room);
         renderPlayers(room);
@@ -702,6 +793,7 @@
         if (room.status === "countdown" && Number(room.startAt)) {
           if (resultsShownForRound) {
             resultsShownForRound = false; battleStarted = false;
+            resetSpectating();
             battleResultOverlay.classList.remove("show");
             battleResultOverlay.setAttribute("aria-hidden", "true");
             window.MonpatchChat?.place("lobby");
@@ -890,6 +982,7 @@
 
         if (room.status === "countdown" || room.status === "playing") {
           room.players[uid].forfeited = true;
+          room.players[uid].disconnectReason = "leave";
           room.players[uid].finished = true;
           room.players[uid].score = -1;
           room.players[uid].finalScore = -1;
@@ -929,6 +1022,7 @@
     }
 
     function resetLobbyUI() {
+      resetSpectating();
       window.MonpatchChat?.stop();
       cancelBattleDisconnect();
       joinRoomArea?.classList.remove("hiddenByRoom");

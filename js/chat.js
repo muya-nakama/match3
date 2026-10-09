@@ -129,7 +129,7 @@
       await sendRequest(payload);
       if (mine !== generation) return;
       input.value = ''; pending = null; notice('送信しました。'); render();
-    } catch (error) { if (mine === generation) notice(String(error.code || '').includes('PERMISSION_DENIED') ? '送信できません。連続送信は3秒待ち、利用制限も確認してください。' : '送信できませんでした。接続を確認して再送してください。'); }
+    } catch (error) { if (mine === generation) notice(String(error.code || '').includes('PERMISSION_DENIED') ? '送信が許可されませんでした。部屋への接続状態を確認してください。' : '送信できませんでした。接続を確認して再送してください。'); }
     finally { sending = false; controls(); showPending(); }
   });
   async function assertAllowed() {

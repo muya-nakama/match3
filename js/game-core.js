@@ -29,10 +29,12 @@ const bgmAudio = new Audio(AUDIO_DATA.bgm);
 bgmAudio.loop = true;
 bgmAudio.preload = "auto";
 bgmAudio.volume = AUDIO_VOL.bgm*bgmVolume;
+let bgmRequested=false;
 
 function playSfx(name, scale=1, delay=0){
- if(seVolume===0)return;
+ if(seVolume===0 || document.hidden)return;
  const run=()=>{
+  if(document.hidden)return;
   try{
    const a=new Audio(AUDIO_DATA[name]);
    a.preload="auto";
@@ -51,19 +53,30 @@ function playChainSfx(level){
  playSfx("chain"+n);
 }
 function startBgm(restart=true){
+ bgmRequested=true;
+ refreshAudioSettings();
  try{
   if(restart)bgmAudio.currentTime=0;
   bgmAudio.volume=AUDIO_VOL.bgm*bgmVolume;
-  bgmAudio.play().catch(()=>{});
+  if(!document.hidden)bgmAudio.play().catch(()=>{});
  }catch(e){}
 }
 function stopBgm(){
+ bgmRequested=false;
  try{bgmAudio.pause();bgmAudio.currentTime=0;}catch(e){}
 }
+document.addEventListener("visibilitychange",()=>{
+ if(document.hidden){
+  bgmAudio.pause();
+ }else if(bgmRequested){
+  refreshAudioSettings();
+  bgmAudio.play().catch(()=>{});
+ }
+});
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.69.1";
+const GAME_VERSION="2.69.2";
 let rankingMinutes=3,rankingInterference=false,rankingJsonpSeq=0;
 
 const titleScreen=document.getElementById("titleScreen");

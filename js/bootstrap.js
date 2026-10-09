@@ -209,6 +209,7 @@
               updates[`players/${uid}/finalScore`] = null;
               updates[`players/${uid}/forfeited`] = false;
               updates[`players/${uid}/disconnectedAt`] = null;
+              updates[`players/${uid}/disconnectReason`] = null;
             });
             await roomRef.update(updates);
             setMessage("開始カウントダウンを送信しました。");

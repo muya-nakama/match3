@@ -35,7 +35,7 @@
           "createdAt"
         ],
         "$message": {
-          ".write": "auth != null && !root.child('blockedUsers').child(auth.uid).exists() && root.child('rooms').child($room).child('players').child(auth.uid).exists() && root.child('rooms').child($room).child('players').child(auth.uid).child('forfeited').val() !== true && root.child('chatConfig/asyncEnabled').val() === true && !data.exists() && newData.exists() && !root.child('chatArchiveReceipts').child($room).child($message).exists() && !root.child('roomChats').child($room).child($message).exists() && $room.matches(/^[0-9]{6}$/) && $message.matches(/^c_[a-f0-9]{32}$/) && (root.child('rooms').child($room).child('status').val() === 'waiting' || root.child('rooms').child($room).child('status').val() === 'results') && (!root.child('chatSendTimes').child(auth.uid).exists() || root.child('chatSendTimes').child(auth.uid).val() <= now - 3000)",
+          ".write": "auth != null && !root.child('blockedUsers').child(auth.uid).exists() && root.child('rooms').child($room).child('players').child(auth.uid).exists() && root.child('chatConfig/asyncEnabled').val() === true && !data.exists() && newData.exists() && !root.child('chatArchiveReceipts').child($room).child($message).exists() && !root.child('roomChats').child($room).child($message).exists() && $room.matches(/^[0-9]{6}$/) && $message.matches(/^c_[a-f0-9]{32}$/) && (root.child('rooms').child($room).child('status').val() === 'waiting' || root.child('rooms').child($room).child('status').val() === 'results')",
           ".validate": "newData.hasChildren(['uid','name','playerId','text','session','createdAt']) && newData.parent().parent().parent().child('chatSendTimes').child(auth.uid).val() === now",
           "uid": {
             ".validate": "newData.isString() && newData.val() === auth.uid"
@@ -64,7 +64,7 @@
     "chatSendTimes": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid && !root.child('blockedUsers').child(auth.uid).exists() && root.child('chatConfig/asyncEnabled').val() === true && newData.isNumber() && newData.val() === now && (!data.exists() || data.val() <= now - 3000)"
+        ".write": "auth != null && auth.uid === $uid && !root.child('blockedUsers').child(auth.uid).exists() && root.child('chatConfig/asyncEnabled').val() === true && newData.isNumber() && newData.val() === now"
       }
     },
     "chatArchiveReceipts": {

@@ -756,7 +756,7 @@ body{
 }
 </style>
 
-<link rel="stylesheet" href="js/icon-cropper.css?v=2.69.1">
+<link rel="stylesheet" href="js/icon-cropper.css?v=2.69.2">
 <style>[hidden]{display:none!important}.profileNameEdit{margin-top:8px!important;font-size:12px!important;padding:8px 12px!important}
 .playerNameSetup.hasSavedName{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin:10px 0 12px}
 .hasSavedName .playerNameSetupLabel{display:none}
@@ -789,7 +789,7 @@ body{
     <section id="topPage" class="pageView active">
       <section class="card">
       <h1>モンパッチ</h1>
-      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.69.1</div>
+      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.69.2</div>
       <div class="sub">
         シングルモードとオンライン対戦モードが遊べるマッチパズル。
       </div>
@@ -919,6 +919,12 @@ body{
       <span id="battleRoomMini" class="roomMini">ROOM ------</span>
     </div>
     <div id="battleLoadOverlay" class="battleLoadOverlay">ゲームを準備しています…</div>
+    <section id="battleSpectatorPanel" class="card" hidden aria-label="対戦観戦">
+      <h2>観戦中</h2>
+      <p>リタイアしました。他の参加者の終了を待っています。</p>
+      <div id="battleSpectatorScores" aria-live="polite"></div>
+      <button id="battleSpectatorTopBtn" type="button">トップへ戻る</button>
+    </section>
     <iframe
       id="battleGameFrame"
       class="battleGameFrame"
@@ -946,18 +952,18 @@ body{
  <p class="environmentNote">変更は自動保存され、シングル・マルチの両方に反映されます。</p>
  <button id="environmentClose" type="button">閉じる</button>
 </dialog>
-  <script src="js/audio-settings.js?v=2.69.1"></script>
-  <script src="js/environment.js?v=2.69.1"></script>
+  <script src="js/audio-settings.js?v=2.69.2"></script>
+  <script src="js/environment.js?v=2.69.2"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script src="js/player-identity.js?v=2.69.1"></script>
-  <script src="js/icon-cropper.js?v=2.69.1"></script>
-  <script src="js/app.js?v=2.69.1"></script>
-  <script src="js/profile.js?v=2.69.1"></script>
-  <script src="js/chat.js?v=2.69.1"></script>
-  <script src="js/multi.js?v=2.69.1"></script>
-  <script src="js/single.js?v=2.69.1"></script>
-  <script src="js/bootstrap.js?v=2.69.1"></script>
+  <script src="js/player-identity.js?v=2.69.2"></script>
+  <script src="js/icon-cropper.js?v=2.69.2"></script>
+  <script src="js/app.js?v=2.69.2"></script>
+  <script src="js/profile.js?v=2.69.2"></script>
+  <script src="js/chat.js?v=2.69.2"></script>
+  <script src="js/multi.js?v=2.69.2"></script>
+  <script src="js/single.js?v=2.69.2"></script>
+  <script src="js/bootstrap.js?v=2.69.2"></script>
 </body>
 </html>
