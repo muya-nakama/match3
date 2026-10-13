@@ -1,0 +1,51 @@
+モンパッチ v2.69.5 内部整理・検証結果
+
+対象：最新保存のmonpatch_v2.69.4_full.zip全61ファイルと別保存の現行コード.js／current-appsscript.json。
+HTML、JS、CSS、PWA、旧ランキング、Apps Script、Firebaseルール、Termux管理コマンド、資料を確認。画像・音声埋込みはデータ同一性を確認。
+
+削除した処理（各版9関数、計18宣言）：
+js/game-core.js: formatTime
+js/game-core.js: generateTesterBoard
+js/game-core.js: resetTesterBoard
+js/game-core.js: squareContaining
+js/game-core.js: matchedBentShape
+js/game-core.js: fiveShapeContaining
+js/game-core.js: chooseSpecial
+js/tutorial.js: tutorialBreakAllMatches
+js/tutorial.js: tutorialCleanSpecialBoard
+download/js/game-core.js: formatTime
+download/js/game-core.js: generateTesterBoard
+download/js/game-core.js: resetTesterBoard
+download/js/game-core.js: squareContaining
+download/js/game-core.js: matchedBentShape
+download/js/game-core.js: fiveShapeContaining
+download/js/game-core.js: chooseSpecial
+download/js/tutorial.js: tutorialBreakAllMatches
+download/js/tutorial.js: tutorialCleanSpecialBoard
+
+ほか：未使用rankingJsonpSeq、旧.durationBtnの操作登録、app.jsの二重トップ復帰ハンドラーを各版から削除。
+同じHTMLで繰り返される背景画像だけをCSS変数化。画像自体の圧縮・再生成はなし。
+
+整理した旧ファイル5件：
+ランキング用_Code_v2.67.txt
+ランキングとチャット用_Code_v2.69.txt
+導入手順_v2.67.txt
+導入手順_v2.68.txt
+更新内容と配置.txt
+携帯貼付用の結合コードはランキングとチャット用_Code.txtとして維持。旧正常ZIPの保管物は削除していない。
+
+残したもの：
+通常版とdownload版の機能差、全得点ルール、特殊合成、妨害、ミッション、チュートリアル、フリープレイ、音量、プロフィール、ランキング、チャット、ブロック、再戦、観戦。
+Firebaseルール、GASのChat.gs、権限、roomdeleteはv2.69.4からバイト単位で同一。Code.gsは別保存の現行ランキング実装を採用し、入出力・シート結果の一致を確認。
+旧PWAのGAS送信API、セットアップ関数、管理トリガーは現役のため削除していない。
+
+PASS：通常版／download版の実ゲームコードをDOM・通信スタブ付きで実行。各16ケース、計32ケースで整理前後の盤面・得点・メッセージが一致。
+3/4/5個マッチ、2×2、交差形、特殊6合成、花＋通常、氷・鎖の隣接解除、特殊巻込みから隣接解除しない判定、通常連鎖、ミッション。
+PASS：ランキングの初回登録・低スコア時の保持・高得点更新・名前更新・時間別・妨害別・API成功／エラーを比較。
+PASS：ルーム作成からトップ退出の実コードを通信スタブで実行。トップハンドラー2→1、退出更新は1回、ルーム状態解除。
+PASS：4つのHTMLでCSS変数を展開すると従来のCSSと完全一致。背景画像は同一。
+PASS：JS/GAS/CJS全33ファイルの構文、JSON、manifest、ローカルリンク、シェル構文。
+PASS：roomdelete期限境界、更新時刻なし保持、参加者の最新更新時刻を確認。削除実行はしていない。
+
+未確認：この環境には実行可能ブラウザがなく、ブラウザ取得も失敗したため、実画面描画・タップ・PWAキャッシュ更新・2端末の本番対戦は未確認。
+Firebase／Apps Scriptの公開環境へ接続・デプロイ・データ変更はしていない。実機での確認は更新後に必要。

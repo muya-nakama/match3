@@ -45,6 +45,7 @@
       window.scrollTo({top:0,behavior:"auto"});
     }
     function showMultiPage(){
+      if(!currentRoomCode)window.MonpatchSkillBattle?.showModeChoices();
       refreshPageProfiles();
       topPage?.classList.remove("active");
       multiPage?.classList.add("active");

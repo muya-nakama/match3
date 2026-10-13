@@ -200,6 +200,7 @@
               updatedAt: firebase.database.ServerValue.TIMESTAMP,
               startAt,
               attacks: null,
+              skillNotices: null,
               results: null,
               resultAt: null
             };

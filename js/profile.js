@@ -113,6 +113,7 @@
     function roomPlayerData(name, joinOrder) {
       return {
         name,
+        protocol: 3,
         playerId: window.MonpatchIdentity.getId(),
         avatarData: getLocalAvatar() || "",
         ready: false,

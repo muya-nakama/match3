@@ -77,6 +77,9 @@
         if (!w || !d) return false;
 
         gameMode = "single";
+        if(typeof w.__soloInterference==="boolean")w.eval("interferenceEnabled="+w.__soloInterference);
+        w.__isBattleMode=false;w.__skillMode=false;w.MonpatchSkillGame?.reset();
+        const skillControls=d.getElementById("skillControls");if(skillControls)skillControls.hidden=true;
         if(typeof w.syncPlayerNameUI === "function")w.syncPlayerNameUI();
         if (gameModeTitle) gameModeTitle.textContent = "モンパッチ シングル";
 
@@ -188,3 +191,24 @@
 
       tryOpen();
     }
+
+    let singleProgressScore=0,singleProgressDay='';
+    window.__singleProgress=function(event,value){
+      if(gameMode!=='single')return;
+      const D=window.MonpatchDaily;if(!D)return;
+      if(event==='start'){singleProgressScore=0;singleProgressDay=window.MonpatchRules.dayKey();D.record('play');return;}
+      if(event==='snapshot'){
+        const day=window.MonpatchRules.dayKey();if(day!==singleProgressDay){singleProgressDay=day;singleProgressScore=value.score;}
+        D.record('best',value.score,true);D.record('maxChain',value.chain,true);
+        const delta=Math.max(0,value.score-singleProgressScore);singleProgressScore=value.score;if(delta)D.record('total',delta);
+      }else if(event==='finish'){D.record('finish');D.record(value.interference?'with':'without');if(!value.hint)D.record('noHint');}
+      else D.record(event,Number(value)||1);
+    };
+    document.getElementById('topHistoryMore')?.addEventListener('click',()=>{
+      const content=document.getElementById('topHistoryContent');content.replaceChildren();
+      const source=battleGameFrame.contentDocument;
+      if(source)for(const item of source.querySelectorAll('#historyOverlay .historyItem'))content.append(item.cloneNode(true));
+      if(!content.children.length)content.textContent='ゲーム本体の読み込み後に、もう一度開いてください。';
+      document.getElementById('topHistoryDialog').showModal();
+    });
+    document.getElementById('topHistoryClose')?.addEventListener('click',()=>document.getElementById('topHistoryDialog').close());

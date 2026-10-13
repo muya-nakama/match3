@@ -1,41 +1,24 @@
-モンパッチ v2.69.5 — 接続先と復旧情報（2026/10/09）
+モンパッチ v2.70.0 — 接続先と更新対象（2026/10/13）
 
-【ゲーム】
 GitHub：https://github.com/muya-nakama/match3
 通常版：https://muya-nakama.github.io/match3/
-PWA版：https://muya-nakama.github.io/match3/download/
-通常版とdownload版には従来の機能差がある。今回の番号更新は内部整理によるもので、download版へ通常版の追加機能は移植していない。
+PWA版はいったん削除。旧download/も削除する。
 
-【Firebase】
-プロジェクト：match3-battle-53092
+Firebase：match3-battle-53092
 DB：https://match3-battle-53092-default-rtdb.asia-southeast1.firebasedatabase.app/
-接続設定：js/app.js、download/js/app.js
-匿名認証、ルーム管理、妨害配信、チャット配信、ブロック判定に使用。
-ルール原本：server/database.rules.json。今回は変更なし。
-データそのもの、Authenticationの設定、実際に公開されているルールはZIPに含まれない。
-roomdeleteの原本：Termux/roomdelete.cjs。今回は変更なし。
-ルームの削除は通常の更新作業とは別。今回の整理のために実行しない。
+接続設定：js/app.js
+ルール原本：../Firebase/database.rules.json。モード維持、新モードprotocol=3の検証を追加。
+本番ルールはuploadfirebaseで別途反映する。既存のルーム・チャット・ブロック情報は消去しない。
+Termux/roomdelete.cjs等の管理コマンドは変更なし。今回の更新のために実行しない。
 
-【ランキング・チャット：Apps Script】
-Webアプリ：
+ランキング・チャット Apps Script：
 https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec
-ソース：server/Code.gs、server/Chat.gs
-携帯でまとめて貼付：ランキングとチャット用_Code.txt（分割ソースと同時使用しない）
-権限設定：server/appsscript.json。今回は変更なし。
-Code.gsは別保存された現行コードを採用。Chat.gsはv2.69.4の更新時刻記録入りを採用。
-RankingV2：時間・妨害設定別の最高点。PlayersV2：最新の名前・アイコン。
-ChatLogs：日付別の発言ログ。ChatBlocks：Firebase UIDのブロック一覧。
-通常版はchatArchiveQueueへ即時送信、archiveMonpatchChatが約1分ごとにシートへ記録してroomChatsへ移す。
-download版は従来のchatSend／chatInfoを使用するため、そのAPI・認証・保存処理を維持。
-CHAT_READY、RANKING_SPREADSHEET_ID等のScript Propertiesと既存トリガーは維持する。
-公開中のApps Script、Script Properties、トリガー、シートの実データは今回直接取得・変更していない。
+原本：../AppsScript/Code.gs、../AppsScript/Chat.gs、../AppsScript/appsscript.json。
+携帯でまとめて貼付：../AppsScript/ランキングとチャット用_Code.txt（分割ソースと同時使用しない）。
+Code.gsは個別妨害対戦の登録拒否を追加。Chat.gs、既存シート列・Script Properties・トリガーは変更なし。
+本番Apps Scriptはuploadgasで別途反映する。シートのデータは更新作業で削除しない。
 
-【配置・更新】
-全ファイル入りZIP。展開して、いつものDownload/ゲーム/モンパッチ/Match3の内容を置換。
-旧ファイルは削除対象ファイル.txtに記載。単純な上書きだと旧ファイルは残る。
-upload3によるゲーム反映と、必要時のuploadgas／uploadfirebaseは別作業。
-すでにv2.69.4のサーバーが反映済みなら、この整理に伴うGAS・ルール再反映は不要。
-実機でトップのVer.2.69.5、シングル、2端末の対戦、ランキング、チャット、PWAの更新を確認する。
-ブラウザのサイトデータを消すと保存ID・名前・画像を失うため、ファイル更新とサイトデータ削除は区別する。
-旧正常ZIPを保管してから置換し、確認後にバックアップを更新する。
-管理アカウント、復旧情報、トークン、秘密鍵は公開ゲームファイルへ記載しない。
+ポイント、玉、デイリー進捗は端末内の既存プレイヤーIDごとに保存する。
+新モードのルーム、発動済み攻撃、反射済み攻撃、防御使切りアナウンスはFirebaseへ同期する。
+選択した妨害と反射防御の残回数・時間は端末内のみ。相手に送信しない。
+仮値：js/skill-rules.js。将来のキャラクター素材を未採用のまま調整できる。

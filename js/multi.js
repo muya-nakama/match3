@@ -336,6 +336,7 @@
 
     window.__battleSendAttack = async function(kind) {
       if (gameMode !== "battle" || !battleStarted || !currentRoomCode || !currentUser) return false;
+      if (window.MonpatchSkillBattle?.isSkill())return false;
       if (kind !== "ice" && kind !== "chain") return false;
 
       const targetUid = pickAttackTargetUid();
@@ -368,6 +369,7 @@
         if (!running || busy) return false;
 
         if (typeof w.__battleOriginalApplyRandomBlocker !== "function") return false;
+        if(event.kind==="skill")return w.MonpatchSkillGame?.apply(event)??false;
         const changed = w.__battleOriginalApplyRandomBlocker(event.kind);
         if (changed && typeof w.render === "function") w.render();
         else if (changed) w.eval("render()");
@@ -388,6 +390,8 @@
       attackRef.on("child_added", snap => {
         const ev = snap.val();
         if (!ev || ev.toUid !== currentUser.uid) return;
+        if(window.MonpatchSkillBattle?.isSkill()){window.MonpatchSkillBattle.receive({id:snap.key,...ev});return;}
+        if(ev.kind!=="ice"&&ev.kind!=="chain")return;
         attackQueue.push({ key:snap.key, ...ev });
       });
 
@@ -417,6 +421,7 @@
       if (attackFlushTimer) { clearInterval(attackFlushTimer); attackFlushTimer = null; }
       if (attackRef) { attackRef.off(); attackRef = null; }
       attackQueue = [];
+      window.MonpatchSkillBattle?.detach();
     }
 
     async function syncOwnScore(force=false) {
@@ -485,7 +490,7 @@
       if (entries.length < 2 || !entries.every(([,p]) => p && p.finished === true)) return;
 
       // A brief reconnect must not finalize a forfeiture before the client can resume.
-      const wait = Math.max(0, ...entries.map(([,p]) =>
+      const wait = room.mode==="skill"?0:Math.max(0, ...entries.map(([,p]) =>
         p?.disconnectReason === "connection" && p.forfeited === true
           ? 10000 - (Date.now() + serverTimeOffset - Number(p.disconnectedAt || 0)) : 0));
       if (wait > 0) {
@@ -503,7 +508,7 @@
           if (!current || current.status !== "playing" || !current.players) return;
           const ps = Object.entries(current.players);
           if (ps.length < 2 || !ps.every(([,p]) => p && p.finished === true)) return;
-          if (ps.some(([,p]) => p?.disconnectReason === "connection" && p.forfeited === true &&
+          if (current.mode!=="skill" && ps.some(([,p]) => p?.disconnectReason === "connection" && p.forfeited === true &&
               Date.now() + serverTimeOffset - Number(p.disconnectedAt || 0) < 10000)) return;
 
           const sorted = ps.slice().sort((a,b) => {
@@ -551,6 +556,7 @@
     function showBattleResults(room) {
       if (!room?.results || room.players?.[currentUser?.uid]?.returned === true) return;
       resultsShownForRound = true;
+      window.MonpatchSkillBattle?.beforeResult(room)?.catch(console.error);
       stopBattleRuntime();
       cancelBattleDisconnect();
       window.MonpatchChat?.place("results");
@@ -640,6 +646,7 @@
         if (!d) return;
 
         gameMode = "battle";
+        const w=battleGameFrame.contentWindow;if(!w.__isBattleMode)w.__soloInterference=!!w.eval("interferenceEnabled");w.__isBattleMode=true;w.__skillMode=window.MonpatchSkillBattle?.isSkill()||false;
         singleProfileFloat?.classList.remove("show");
         battleGameScreen?.classList.remove("singleModeView");
         if (gameModeTitle) gameModeTitle.textContent = "モンパッチ Battle";
@@ -663,6 +670,10 @@
 
     async function enterBattleGame(startAt) {
       if (battleStarted || battleSpectating) return;
+      if(window.MonpatchSkillBattle?.isSkill()){
+        try{await window.MonpatchSkillBattle.prepare();}catch(e){setMessage(e.message);await leaveRoom(currentRoomCode,currentUser.uid);return;}
+        if(battleStarted||battleSpectating||currentRoomData?.players?.[currentUser?.uid]?.forfeited)return;
+      }
       battleStarted = true;
 
       configureFrameForBattleMode();
@@ -703,12 +714,13 @@
               };
               window.__battlePatched = true;
             }
-            interferenceEnabled = true;
+            interferenceEnabled = !window.__skillMode;
             syncToggles();
           `);
 
           injectBattleHudIntoFrame();
           w.startGame(BATTLE_MINUTES);
+          if(window.MonpatchSkillBattle?.isSkill()){w.MonpatchSkillGame.start();window.MonpatchSkillBattle.start();window.MonpatchSkillBattle.listenNotices();}
           renderBattleHud(currentRoomData);
           startAttackListener();
           startScoreAndFinishWatch();
@@ -779,13 +791,15 @@
 
         const room = snap.val();
         currentRoomData = room;
+        window.MonpatchSkillBattle?.lobby(room);
         const me = room.players?.[currentUser?.uid];
         if (["countdown", "playing"].includes(room.status) && me?.forfeited === true) {
           const elapsed = Date.now() + serverTimeOffset - Number(me.disconnectedAt || 0);
-          if (!battleSpectating && me.disconnectReason === "connection" && elapsed < 10000) {
+          if (!window.MonpatchSkillBattle?.isSkill(room) && !battleSpectating && me.disconnectReason === "connection" && elapsed < 10000) {
             recoverBattleConnection(code);
             return;
           }
+          if(window.MonpatchSkillBattle?.isSkill(room))window.MonpatchSkillBattle.settle(true).catch(console.error);
           enterSpectatorMode(room);
           maybeFinalizeResults(room);
           return;
@@ -860,6 +874,8 @@
             createdAt: firebase.database.ServerValue.TIMESTAMP,
             updatedAt: firebase.database.ServerValue.TIMESTAMP,
             status: "waiting",
+            mode: window.__selectedBattleMode||"normal",
+            protocol: 3,
             hostUid: uid,
             startAt: null,
             nextJoinOrder: 1,
@@ -908,6 +924,7 @@
       }
 
       const initialRoom = initialSnap.val() || {};
+      if((initialRoom.mode||"normal")!==(window.__selectedBattleMode||"normal"))throw new Error("この部屋は別の対戦モードです。モードを選び直してください。");
 
       if (initialRoom.status !== "waiting") {
         throw new Error("その部屋は参加受付中ではありません。");
@@ -946,6 +963,7 @@
       }
 
       const latestRoom = latestSnap.val() || {};
+      if((latestRoom.mode||"normal")!==(window.__selectedBattleMode||"normal"))throw new Error("対戦モードが一致しません。");
 
       if (latestRoom.status !== "waiting") {
         throw new Error("その部屋は参加受付中ではありません。");
@@ -1028,6 +1046,7 @@
         throw new Error("退出処理に失敗しました。");
       }
 
+      if(forfeited&&window.MonpatchSkillBattle?.isSkill())await window.MonpatchSkillBattle.settle(true);
       return { roomDeleted, newHostUid, forfeited };
     }
 

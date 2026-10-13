@@ -1,0 +1,6 @@
+モンパッチ v2.70.0 フォルダ分け版
+ZIPをDownload/ゲーム/モンパッチへ展開し、Match3・AppsScript・Firebaseの各フォルダへ配置します。
+ゲーム本体はMatch3、Apps Script原本はAppsScript、Firebaseルール原本はFirebaseです。
+既存の接続設定ファイルと、ランキングシート・旧バージョンのバックアップは残します。
+旧Match3/download/は削除してください。ブラウザのサイトデータは削除不要です。
+詳細はZIP直下の「最初に読む.txt」を参照してください。

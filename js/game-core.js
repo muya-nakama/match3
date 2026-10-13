@@ -76,7 +76,7 @@ document.addEventListener("visibilitychange",()=>{
 
 
 const RANKING_API_URL="https://script.google.com/macros/s/AKfycbwl5SwB31HQZNEVOv2ddbLjDtsgz-z8a7BXSfDkPXcQid9lyQb1At0cJ--Emip2BOsShw/exec";
-const GAME_VERSION="2.69.5";
+const GAME_VERSION="2.70.0";
 let rankingMinutes=3,rankingInterference=false;
 
 const titleScreen=document.getElementById("titleScreen");
@@ -98,7 +98,14 @@ const missionBox=document.getElementById("missionBox");
 const ROWS=7, COLS=9, COLORS=5;
 // ピカピカの得点表。個数点は実際に消えたブロックだけに付ける。
 const SPECIAL_POINTS={line: [300,30],bomb:[500,50],flower:[600,60],lineLine:[1200,60],bombLine:[1600,80],flowerLine:[1800,90],bombBomb:[2000,100],flowerBomb:[2200,110],flowerFlower:[2400,120]};
+function gameDaily(event,value=1){
+ if(window.__isBattleMode||testerMode||tutorialMode)return;
+ try{parent.__singleProgress?.(event,value);}catch(e){console.error(e);}
+}
+function dailySpecialCreated(s){gameDaily(s==='flower'?'makeFlower':s==='bomb'?'makeBomb':'makeLine');}
 function scoreSpecial(kind,count){
+ if(['line','bomb','flower'].includes(kind))gameDaily(kind==='line'?'useLine':kind==='bomb'?'useBomb':'useFlower');
+ else gameDaily('combo');
  const [base,perTile]=SPECIAL_POINTS[kind];
  score+=base+perTile*count;
 }
@@ -138,7 +145,7 @@ function markActivity(){
 }
 function isBlocked(t){return !!t && ((t.ice||0)>0 || !!t.chain);}
 function isTrigger(t){return !!t?.trigger;}
-function isMovableTile(t){return !!t && !isBlocked(t) && !isTrigger(t);}
+function isMovableTile(t){return !!t && !isBlocked(t) && !isTrigger(t) && !window.__skillSpecialSealed?.(t);}
 function isMatchableNormal(t){return !!t && !t.special && !isBlocked(t) && !isTrigger(t) && t.color!=null;}
 function newMission(){
  if(!interferenceEnabled){mission=null;updateMissionUI();return;}
@@ -228,6 +235,8 @@ function finishGame(){
   resultInterferenceStats.style.display=interferenceEnabled?"block":"none";
   resultInterferenceStats.textContent=`🔗×${chainAttackCount}　🧊×${iceAttackCount}`;
  }
+ gameDaily("snapshot",{score,chain:chainLevel});
+ gameDaily("finish",{interference:interferenceEnabled,hint:hintEnabled});
  resultScreen.classList.add("show");
  prepareResultRanking();
 }
@@ -238,6 +247,7 @@ function startGame(minutes=selectedMinutes){
  const testerBadge=document.getElementById("testerBadge");
  testerBadge?.classList.remove("show");
  selectedMinutes=minutes;
+ gameDaily("start");
  startBgm(true);
  remainingSeconds=minutes*60;
  score=0;
@@ -482,7 +492,7 @@ rankingCloseBtn?.addEventListener("click",()=>{playDecision();closeRanking()});
 document.querySelectorAll(".rankingDurationBtn").forEach(b=>b.addEventListener("click",()=>loadRanking(Number(b.dataset.rankMin))));
 document.querySelectorAll(".rankingModeBtn").forEach(b=>b.addEventListener("click",()=>loadRanking(rankingMinutes,b.dataset.rankInterference==="1")));
 function prepareResultRanking(){
- if(testerMode){resultRankingBox.style.display="none";return}
+ if(testerMode || window.__skillMode){resultRankingBox.style.display="none";return}
  resultRankingBox.style.display="";
  if(resultRankingTitle)resultRankingTitle.textContent=`ランキングに登録（妨害${interferenceEnabled?"あり":"なし"}）`;
  resultRankStatus.textContent="";
@@ -502,7 +512,7 @@ function syncResultNameUI(){
  label.textContent=saved?("登録名："+saved):"";label.hidden=!saved;edit.hidden=!saved;
 }
 async function submitScoreToRanking(){
- if(testerMode || resultRankSubmit.disabled)return;
+ if(testerMode || window.__skillMode || resultRankSubmit.disabled)return;
  const name=(resultRankName.value||"").trim().slice(0,16);
  if(!name){resultRankStatus.textContent="名前を入力してください";return}
  setSavedPlayerName(name);syncPlayerNameUI();syncResultNameUI();
@@ -510,11 +520,12 @@ async function submitScoreToRanking(){
  const submittedScore=Math.floor(score),submittedInterference=interferenceEnabled;
  try{
   const data=await window.MonpatchRanking.submit(RANKING_API_URL,{
-   action:"submit",name,score:String(submittedScore),minutes:String(selectedMinutes),
+   action:"submit",battleMode:window.__isBattleMode?"normal":"single",name,score:String(submittedScore),minutes:String(selectedMinutes),
    interference:submittedInterference?"1":"0",
    chainAttacks:String(submittedInterference?chainAttackCount:0),
    iceAttacks:String(submittedInterference?iceAttackCount:0),version:GAME_VERSION
   });
+  gameDaily("rank");
   const best=Number(data.bestScore||0).toLocaleString("ja-JP");
   const rank=Number(data.rank)>0?"\n現在の順位："+Number(data.rank)+"位":"";
   if(data.result==="updated")resultRankStatus.textContent="🎉 高得点を更新しました！\n"+Number(data.previousScore||0).toLocaleString("ja-JP")+"点 → "+best+"点"+rank;
@@ -573,6 +584,7 @@ function newBoard(resetScore=true){
 function render(dropMap=null, popSet=null){
  boardEl.innerHTML="";
  scoreEl.textContent=score;
+ if(gameRunning)gameDaily("snapshot",{score,chain:chainLevel});
  const step=getStepPx()||56;
  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
   const t=B[r][c];
@@ -626,6 +638,7 @@ function render(dropMap=null, popSet=null){
   if(t)d.addEventListener("click",()=>tap(r,c));
   boardEl.appendChild(d);
  }
+ window.MonpatchSkillGame?.paint();
 }
 
 function adjacent(a,b){return Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1}
@@ -1145,9 +1158,10 @@ async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
    triggeredIce.push({r,c});
   }else if((t.ice||0)>0){
    t.ice=Math.max(0,t.ice-1);
+   if(t.ice===0)gameDaily("ice");
    score+=t.ice===0?800:600; // 完全除去と1段階解除はそれぞれ1回だけ加点
   }else if(t.chain){
-   t.chain=false;
+   t.chain=false;gameDaily("chain");
    score+=500; // チェーン解除
   }
  }
@@ -1177,6 +1191,7 @@ async function clearCollapseOnly(clearSet,protectedKey=null,opts={}){
  for(const s of actual){
   const [r,c]=parseK(s),t=B[r]?.[c];
   if(t){
+   if(!t.special&&t.color!=null)gameDaily("color"+t.color);
    progressMissionForTile(t);
    B[r][c]=null;
    if(directMatchKeys.has(s) || (!specialKind && !attributed.has(s)))score+=20*chainLevel;
@@ -1228,6 +1243,7 @@ async function resolveOneMatch(match,preferred=null,moveDir=null){
  for(const spawn of spawns){
   const key=K(spawn.pos.r,spawn.pos.c);
   B[spawn.pos.r][spawn.pos.c]=make(null,spawn.special);
+  dailySpecialCreated(spawn.special);
   generatedKeys.add(key);
   clearSet.delete(key);
  }
@@ -1430,7 +1446,7 @@ function scheduleStableCheck(){
  setTimeout(async()=>{
   if(!gameRunning||lock)return;
   const move=findValidMove();
-  if(!move)await handleDeadlock();
+  if(!move && !window.__skillHasTemporarySeal?.())await handleDeadlock();
  },120);
 }
 function startIdleWatch(){
@@ -1439,7 +1455,7 @@ function startIdleWatch(){
   if(!gameRunning||lock||hintBusy)return;
   if(Date.now()-lastActivity<HINT_DELAY)return;
   const move=findValidMove();
-  if(!move){await handleDeadlock();return;}
+  if(!move){if(!window.__skillHasTemporarySeal?.())await handleDeadlock();return;}
   if(hintEnabled)await showHint(move);
   else lastActivity=Date.now();
  },350);
@@ -1501,6 +1517,7 @@ async function trySwap(a,b){
    for(const madeSpecial of madeSpecials){
     const key=K(madeSpecial.pos.r,madeSpecial.pos.c);
     B[madeSpecial.pos.r][madeSpecial.pos.c]=make(null,madeSpecial.special);
+    dailySpecialCreated(madeSpecial.special);
     generatedKeys.add(key);
     clearSet.delete(key);
    }
