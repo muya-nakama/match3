@@ -12,7 +12,7 @@ function context(html,parent){let n=123456789;const store=new Map();const math=O
 function load(c,n,source){vm.runInContext(source??fs.readFileSync(root+n,'utf8'),c,{filename:n});}
 const html=fs.readFileSync(root+'game.html','utf8');
 const main=context(fs.readFileSync(root+'index.html','utf8'));load(main,'js/player-identity.js');load(main,'js/skill-rules.js');load(main,'js/daily.js');load(main,'js/audio-settings.js');load(main,'js/app.js');load(main,'js/profile.js');
-const game=context(html,main);main.document.getElementById('battleGameFrame').contentWindow=game;main.document.getElementById('battleGameFrame').contentDocument=game.document;load(game,'js/audio-settings.js');load(game,'js/player-identity.js');load(game,'js/ranking-client.js');load(game,'js/skill-rules.js');load(game,'js/game-core.js');load(game,'js/tutorial.js');load(game,'js/skill-game.js');load(game,'js/game-ui.js');
+const game=context(html,main);main.document.getElementById('battleGameFrame').contentWindow=game;main.document.getElementById('battleGameFrame').contentDocument=game.document;load(game,'js/audio-settings.js');load(game,'js/player-identity.js');load(game,'js/ranking-client.js');load(game,'js/skill-rules.js');load(game,'js/game-core.js');load(game,'js/tutorial.js');load(game,'js/skill-game.js');load(game,'js/skill-tutorial.js');load(game,'js/game-ui.js');
 // Real main/iframe shared boundary; Firebase mock logs all sent messages.
 let writes=[];class Ref{constructor(p=''){this.path=p;this.key=p.split('/').pop()}child(p){return new Ref(this.path+'/'+p)}push(v){const r=this.child('e_'+writes.length+'_'+Math.random().toString(36).slice(2));if(v)r.set(v);return r}set(v){writes.push({path:this.path,value:v});return Promise.resolve()}update(v){writes.push({path:this.path,value:v});return Promise.resolve()}remove(){writes.push({path:this.path,value:null});return Promise.resolve()}on(){}off(){}once(){return Promise.resolve({val:()=>null,exists:()=>false})}onDisconnect(){return{update:async()=>{},cancel:async()=>{}}}transaction(f){return Promise.resolve({committed:false,snapshot:{val:()=>null}})}}function database(){return{ref:p=>new Ref(p)}}database.ServerValue={TIMESTAMP:1};main.firebase={database,initializeApp(){},auth:()=>({signInAnonymously:async()=>({user:{uid:"me",getIdToken:async()=>""}})})};
 load(main,'js/chat.js');load(main,'js/multi.js');load(main,'js/skill-battle.js');load(main,'js/single.js');load(main,'js/environment.js');load(main,'js/bootstrap.js');
@@ -61,5 +61,38 @@ Ref.prototype.once=function(){if(this.path.startsWith('blockedUsers/'))return sa
 run("window.__selectedBattleMode='skill'",main);await assert.rejects(run("joinRoom('654321','me')",main),/別の対戦モード/);
 Ref.prototype.once=savedOnce;
 console.log('real DOM/bootstrap/mode separation: passed');
+// Run the entire new demonstration twice through the real effects and tutorial clock.
+let demoTime=Date.now();game.Date=class extends Date{static now(){return demoTime}};
+const realApply=game.MonpatchSkillGame.apply;let captures=[],pauseG=false,pauseH=false;
+game.MonpatchSkillGame.apply=e=>{const ok=realApply(e);captures.push({event:e.pattern,reflected:!!e.reflected,score:run('score',game),board:run('JSON.stringify(B.map(row=>row.map(({color,special,chain,ice})=>({color,special,chain,ice}))))',game)});if(e.pattern==='D')assert.equal(run('scanMatches().cells.size',game),0);return ok};
+game.demoTick=ms=>{
+ if(!pauseG&&game.document.querySelectorAll('.skillMasked').length){pauseG=true;run('setTutorialPaused(true)',game);demoTime+=60000;game.MonpatchSkillGame.paint();assert.equal(game.document.querySelectorAll('.skillMasked').length,9);run('setTutorialPaused(false)',game);}
+ if(!pauseH&&run('__skillHasTemporarySeal()',game)){pauseH=true;run('setTutorialPaused(true)',game);demoTime+=60000;assert(run('__skillHasTemporarySeal()',game));run('setTutorialPaused(false)',game);}
+ demoTime+=ms;return Promise.resolve();
+};
+game.setTimeout=(f,ms)=>{game.demoTick(ms);queueMicrotask(f);return 1};
+run('trySwap=()=>{throw new Error("unexpected tutorial swap")};',game);
+const wallet=JSON.stringify(D.read()),writesBefore=writes.length;
+const realDemoRun=game.MonpatchSkillTutorial.run;game.MonpatchSkillTutorial.run=token=>game.lastDemo=realDemoRun(token);
+async function demo(){
+ captures=[];pauseG=false;pauseH=false;
+ game.document.getElementById('skillTutorialLinkBtn').listeners.click[0]();
+ assert(game.document.getElementById('tutorialOverlay').classList.contains('show'));
+ assert(game.document.getElementById('tutorialExitBtn').hidden);
+ await game.lastDemo;
+ assert(pauseG&&pauseH,'paused timed effects were exercised');
+ assert.equal(game.document.getElementById('tutorialOverlay').classList.contains('show'),false);
+ assert.equal(run('tutorialMode',game),false);assert.equal(game.__skillMode,false);
+ assert.equal(game.document.querySelectorAll('.skillMasked,.skillSealed').length,0);
+ assert.equal(JSON.stringify(D.read()),wallet);assert.equal(writes.length,writesBefore);
+ return JSON.stringify(captures);
+}
+const first=await demo();assert.equal(await demo(),first,'fixed demo repeats exactly');
+const demoEvents=JSON.parse(first);assert.equal(demoEvents.length,9);assert.equal(demoEvents.find(e=>e.event==='E'&&!e.reflected).score,90000);assert.deepEqual(demoEvents.filter(e=>e.reflected).map(e=>e.score),[90000,80000]);
+let sealTime=0;const testSeal=R.createAttackSeal(()=>sealTime);testSeal.receive();assert.equal(testSeal.remaining(),30);sealTime=30000;assert.equal(testSeal.remaining(),0);
+// Cancellation clears tutorial state and makes the pending auto-run inert.
+run('tutorialMode=true;gameRunning=true;lock=false;MonpatchSkillTutorial.setup(true);',game);
+await run('closeTutorial()',game);assert.equal(game.__skillMode,false);
+console.log('skill tutorial: full replay ×2, fixed board, G/H pause, F expiry, cleanup, wallet/network isolation passed');
 console.log('ALL CHECKS PASSED');
 })().catch(e=>{console.error(e);process.exitCode=1});

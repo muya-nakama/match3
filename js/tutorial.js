@@ -205,6 +205,7 @@ async function tutorialWaitUntilResumed(token){
  return token===tutorialToken;
 }
 function setTutorialPaused(paused){
+ window.MonpatchSkillTutorial?.pause(paused);
  tutorialPaused=paused;
  tutorialOverlay.classList.toggle("paused",paused);
  tutorialPauseBtn.textContent=paused ? "再開" : "一時停止";
@@ -429,7 +430,9 @@ async function runTutorial(){
  tutorialDoneActions.classList.add("show");
 }
 
-function openTutorial(){
+function openTutorial(kind='basic'){
+ if(tutorialOverlay.classList.contains('show'))return;
+ const skill=kind==='skill';
  playDecision();
  stopTimer();
  stopIdleWatch();
@@ -461,13 +464,16 @@ function openTutorial(){
  startBgm(true);
  updateTimer();
  updateChain();
- runTutorial();
+ window.MonpatchSkillTutorial?.setup(skill);
+ if(skill)window.MonpatchSkillTutorial.run(++tutorialToken);else runTutorial();
 }
 
 async function closeTutorial(){
  tutorialToken++;
  setTutorialPaused(false);
  while(lock) await sleep(60);
+
+ window.MonpatchSkillTutorial?.cleanup();
 
  tutorialMode=false;
  gameRunning=false;

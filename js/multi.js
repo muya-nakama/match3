@@ -610,6 +610,7 @@
       try {
         const w = battleGameFrame.contentWindow;
         if (w) {
+          if(w.MonpatchSkillTutorial&&w.document.getElementById('tutorialOverlay')?.classList.contains('show'))await w.closeTutorial();
           w.eval(`
             stopBgm();
             stopTimer();

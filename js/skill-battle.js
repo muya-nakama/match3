@@ -1,15 +1,16 @@
 /* 固有妨害対戦。選択と防御は端末内のみ、発動済み攻撃だけを同期する。 */
 (() => {
   const R=window.MonpatchRules,D=window.MonpatchDaily;
-  let round='', pattern='A',left=0,shield=null,nextAttack=0,attackSealedUntil=0;
+  let round='', pattern='A',left=0,shield=null,nextAttack=0;
   let preparing=null,sending=false,received=new Set(),reactions=new Map(),receiving=Promise.resolve(),hudTimer=null;
   const isSkill=(room=currentRoomData)=>room?.mode==='skill';
   const now=()=>Date.now()+serverTimeOffset;
+  const attackSeal=R.createAttackSeal(now);
   function roundKey(room=currentRoomData){return `${currentRoomCode}/${room?.startAt||0}`;}
   function prepare(){
     if(!isSkill())return Promise.resolve();
     const key=roundKey();if(round===key)return preparing||Promise.resolve();
-    round=key;pattern=document.getElementById('skillPattern').value;left=0;shield=null;nextAttack=0;attackSealedUntil=0;received=new Set();reactions=new Map();receiving=Promise.resolve();
+    round=key;pattern=document.getElementById('skillPattern').value;left=0;shield=null;nextAttack=0;attackSeal.reset();received=new Set();reactions=new Map();receiving=Promise.resolve();
     preparing=D.reserve(key,document.getElementById('skillCarry').value).then(s=>{left=s.left;}).catch(e=>{round='';throw e;}).finally(()=>{preparing=null;});
     return preparing;
   }
@@ -20,9 +21,9 @@
     panel.hidden=!isSkill();
     if(!isSkill())return;
     const cfg=R.patterns[pattern],t=now();if(shield&&shield.until<=t)shield=null;
-    d.getElementById('skillOwnState').textContent=`${pattern}：${cfg.name}　残り玉 ${left}個\n${shield?`反射防御 ${shield.left}/2回・残り${Math.ceil((shield.until-t)/1000)}秒`:'反射防御なし'}${attackSealedUntil>t?'　攻撃封印 '+Math.ceil((attackSealedUntil-t)/1000)+'秒':''}`;
+    d.getElementById('skillOwnState').textContent=`${pattern}：${cfg.name}　残り玉 ${left}個\n${shield?`反射防御 ${shield.left}/2回・残り${Math.ceil((shield.until-t)/1000)}秒`:'反射防御なし'}${attackSeal.remaining()?'　攻撃封印 '+attackSeal.remaining()+'秒':''}`;
     const atk=d.getElementById('skillAttackBtn');atk.textContent=nextAttack>t?`攻撃：あと${Math.ceil((nextAttack-t)/1000)}秒`:`攻撃（玉${cfg.cost}個）`;
-    atk.disabled=sending||!battleStarted||finalScoreSubmitted||left<cfg.cost||t<nextAttack||t<attackSealedUntil;
+    atk.disabled=sending||!battleStarted||finalScoreSubmitted||left<cfg.cost||t<nextAttack||attackSeal.remaining()>0;
     d.getElementById('skillGuardBtn').disabled=sending||!battleStarted||finalScoreSubmitted||left<1;
   }
   function notice(message){const d=battleGameFrame.contentDocument;if(d?.getElementById('skillNotice'))d.getElementById('skillNotice').textContent=message;}
@@ -32,7 +33,7 @@
   async function send(events){const updates={updatedAt:firebase.database.ServerValue.TIMESTAMP};for(const e of events)updates[`attacks/${e.id}`]=e;await firebase.database().ref(`rooms/${currentRoomCode}`).update(updates);}
   async function attack(){
     if(sending||!isSkill()||!battleStarted||finalScoreSubmitted)return;
-    const cfg=R.patterns[pattern],t=now();if(left<cfg.cost||t<nextAttack||t<attackSealedUntil)return;
+    const cfg=R.patterns[pattern],t=now();if(left<cfg.cost||t<nextAttack||attackSeal.remaining()>0)return;
     const targets=Object.entries(currentRoomData.players||{}).filter(([uid,p])=>uid!==currentUser.uid&&!p.finished&&!p.forfeited).map(([uid])=>uid);
     if(!targets.length)return;
     sending=true;controls();const key=round;let spent=false;
@@ -65,7 +66,7 @@
         await acknowledge(event.id);controls();
       }else{
         if(event.pattern==='F'){
-          attackSealedUntil=Math.max(attackSealedUntil,now()+R.patterns.F.duration*1000);notice('攻撃が30秒間封印されました。防御は使えます。');await acknowledge(event.id);controls();
+          attackSeal.receive();notice('攻撃が30秒間封印されました。防御は使えます。');await acknowledge(event.id);controls();
         }else attackQueue.push({key:event.id,...event});
       }
     }).catch(e=>{received.delete(event.id);notice('妨害の受信を再試行しています。');setTimeout(()=>{if(battleStarted)receive(event);},1000);console.error(e);});

@@ -2,15 +2,16 @@
 (() => {
   const R=window.MonpatchRules;
   let sealedUntil=0, masks=[], effectTimer=null;
-  window.__skillHasTemporarySeal=()=>window.__skillMode&&Date.now()<sealedUntil;
-  window.__skillSpecialSealed=t=>window.__skillMode && !!t?.special && Date.now()<sealedUntil;
-  function reset(){sealedUntil=0;masks=[];if(effectTimer)clearInterval(effectTimer);effectTimer=null;}
+  let clock=()=>Date.now();
+  window.__skillHasTemporarySeal=()=>window.__skillMode&&clock()<sealedUntil;
+  window.__skillSpecialSealed=t=>window.__skillMode && !!t?.special && clock()<sealedUntil;
+  function reset(){sealedUntil=0;masks=[];clock=()=>Date.now();if(effectTimer)clearInterval(effectTimer);effectTimer=null;}
   function paint(){
-    const now=Date.now();masks=masks.filter(m=>m.until>now);
+    const now=clock();masks=masks.filter(m=>m.until>now);
     for(const el of boardEl.children){const r=Number(el.dataset.r),c=Number(el.dataset.c);el.classList.toggle('skillMasked',masks.some(m=>r>=m.r&&r<m.r+m.size&&c>=m.c&&c<m.c+m.size));el.classList.toggle('skillSealed',!!B[r]?.[c]?.special&&now<sealedUntil);}
   }
   const style=document.createElement('style');style.textContent='.tile.skillMasked{background:#152030!important;border-color:#52617a!important}.tile.skillMasked>*{visibility:hidden}.tile.skillMasked:after{content:"?";position:absolute;inset:0;display:grid;place-items:center;color:#8fa1b9}.tile.skillSealed{outline:2px solid #bd7aff;outline-offset:-2px}';document.head.append(style);
-  function start(){reset();effectTimer=setInterval(()=>{if(window.__skillMode)paint();},150);}
+  function start(options={}){reset();clock=options.clock||(()=>Date.now());effectTimer=setInterval(()=>{if(window.__skillMode)paint();},150);}
   function eligible(r,c){return inside(r,c)&&B[r]?.[c]&&!isBlocked(B[r][c])&&!isTrigger(B[r][c]);}
   function chain(pattern,rnd){
     let choices=[];
@@ -42,7 +43,7 @@
   function apply(event){
     if(!window.__skillMode||!gameRunning||lock)return false;
     const cfg=R.patterns[event.pattern];if(!cfg)return true;
-    const rnd=R.random(event.id),now=Date.now();
+    const rnd=R.random(event.id),now=clock();
     if(['A','B','C'].includes(event.pattern))chain(event.pattern,rnd);
     if(event.pattern==='D')shuffle(rnd);
     if(event.pattern==='E'){

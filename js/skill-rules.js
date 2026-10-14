@@ -19,5 +19,9 @@
     if(event.reflected || !shield || now>=shield.until || shield.left<=0) return {reflect:false,exhausted:false};
     shield.left--; return {reflect:true,exhausted:shield.left===0};
   }
-  window.MonpatchRules={patterns,dayKey,random,shieldReaction,shieldSeconds:30,shieldHits:2,pointLimit:1500,itemLimit:10,carryLimit:2,exchangeCost:50};
+  function createAttackSeal(clock=()=>Date.now()) {
+    let until=0;
+    return {receive(){until=Math.max(until,clock()+patterns.F.duration*1000);},remaining(){return Math.max(0,Math.ceil((until-clock())/1000));},reset(){until=0;}};
+  }
+  window.MonpatchRules={patterns,dayKey,random,shieldReaction,createAttackSeal,shieldSeconds:30,shieldHits:2,pointLimit:1500,itemLimit:10,carryLimit:2,exchangeCost:50};
 })();
