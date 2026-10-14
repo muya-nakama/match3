@@ -14,6 +14,7 @@ function closeInfoOverlay(el){
  playDecision();
  el.classList.remove("show");
  el.setAttribute("aria-hidden","true");
+ if(el===rulesOverlay)window.__guideReturnToTop?.();
 }
 rulesLinkBtn?.addEventListener("click",()=>openInfoOverlay(rulesOverlay));
 historyLinkBtn?.addEventListener("click",()=>openInfoOverlay(historyOverlay));

@@ -15,7 +15,7 @@ const main=context(fs.readFileSync(root+'index.html','utf8'));load(main,'js/play
 const game=context(html,main);main.document.getElementById('battleGameFrame').contentWindow=game;main.document.getElementById('battleGameFrame').contentDocument=game.document;load(game,'js/audio-settings.js');load(game,'js/player-identity.js');load(game,'js/ranking-client.js');load(game,'js/skill-rules.js');load(game,'js/game-core.js');load(game,'js/tutorial.js');load(game,'js/skill-game.js');load(game,'js/skill-tutorial.js');load(game,'js/game-ui.js');
 // Real main/iframe shared boundary; Firebase mock logs all sent messages.
 let writes=[];class Ref{constructor(p=''){this.path=p;this.key=p.split('/').pop()}child(p){return new Ref(this.path+'/'+p)}push(v){const r=this.child('e_'+writes.length+'_'+Math.random().toString(36).slice(2));if(v)r.set(v);return r}set(v){writes.push({path:this.path,value:v});return Promise.resolve()}update(v){writes.push({path:this.path,value:v});return Promise.resolve()}remove(){writes.push({path:this.path,value:null});return Promise.resolve()}on(){}off(){}once(){return Promise.resolve({val:()=>null,exists:()=>false})}onDisconnect(){return{update:async()=>{},cancel:async()=>{}}}transaction(f){return Promise.resolve({committed:false,snapshot:{val:()=>null}})}}function database(){return{ref:p=>new Ref(p)}}database.ServerValue={TIMESTAMP:1};main.firebase={database,initializeApp(){},auth:()=>({signInAnonymously:async()=>({user:{uid:"me",getIdToken:async()=>""}})})};
-load(main,'js/chat.js');load(main,'js/multi.js');load(main,'js/skill-battle.js');load(main,'js/single.js');load(main,'js/environment.js');load(main,'js/bootstrap.js');
+load(main,'js/chat.js');load(main,'js/multi.js');load(main,'js/skill-battle.js');load(main,'js/single.js');load(main,'js/top-guides.js');load(main,'js/environment.js');load(main,'js/bootstrap.js');
 const run=(s,c=main)=>vm.runInContext(s,c);const flush=()=>new Promise(r=>setImmediate(r));
 (async()=>{let count=0;const D=main.MonpatchDaily,R=main.MonpatchRules;
 assert.equal(R.dayKey(Date.parse('2026-10-13T17:59:59Z')),'2026-10-13');assert.equal(R.dayKey(Date.parse('2026-10-13T18:00:00Z')),'2026-10-14');count+=2;
@@ -76,12 +76,15 @@ const wallet=JSON.stringify(D.read()),writesBefore=writes.length;
 const realDemoRun=game.MonpatchSkillTutorial.run;game.MonpatchSkillTutorial.run=token=>game.lastDemo=realDemoRun(token);
 async function demo(){
  captures=[];pauseG=false;pauseH=false;
- game.document.getElementById('skillTutorialLinkBtn').listeners.click[0]();
+ main.document.querySelector('[data-top-guide=skill]').listeners.click[0]();
+ assert.equal(run('gameMode',main),'guide');
  assert(game.document.getElementById('tutorialOverlay').classList.contains('show'));
  assert(game.document.getElementById('tutorialExitBtn').hidden);
  await game.lastDemo;
  assert(pauseG&&pauseH,'paused timed effects were exercised');
  assert.equal(game.document.getElementById('tutorialOverlay').classList.contains('show'),false);
+ assert(main.document.getElementById('topPage').classList.contains('active'));
+ assert(!main.document.getElementById('battleGameScreen').classList.contains('show'));
  assert.equal(run('tutorialMode',game),false);assert.equal(game.__skillMode,false);
  assert.equal(game.document.querySelectorAll('.skillMasked,.skillSealed').length,0);
  assert.equal(JSON.stringify(D.read()),wallet);assert.equal(writes.length,writesBefore);
@@ -94,5 +97,25 @@ let sealTime=0;const testSeal=R.createAttackSeal(()=>sealTime);testSeal.receive(
 run('tutorialMode=true;gameRunning=true;lock=false;MonpatchSkillTutorial.setup(true);',game);
 await run('closeTutorial()',game);assert.equal(game.__skillMode,false);
 console.log('skill tutorial: full replay ×2, fixed board, G/H pause, F expiry, cleanup, wallet/network isolation passed');
+// All three shared entries are on the top; close and loading paths return there.
+assert.equal(main.document.querySelectorAll('.topGuideGroup [data-top-guide]').length,3);
+assert.equal(game.document.querySelectorAll('#tutorialLinkBtn,#skillTutorialLinkBtn,#rulesLinkBtn').length,0);
+main.document.querySelector('[data-top-guide=blocks]').listeners.click[0]();
+assert(game.document.getElementById('rulesOverlay').classList.contains('show'));
+assert.equal(run('gameMode',main),'guide');
+run('closeInfoOverlay(rulesOverlay)',game);
+assert(main.document.getElementById('topPage').classList.contains('active'));
+assert.equal(run('gameMode',main),'launcher');
+run('runTutorial=()=>{}',game);
+run('battleFrameReady=false',main);main.document.querySelector('[data-top-guide=basic]').listeners.click[0]();
+assert(main.document.getElementById('topGuideStatus').textContent.includes('準備'));
+assert(main.document.getElementById('topPage').classList.contains('active'));
+run('battleFrameReady=true',main);
+main.document.getElementById('battleGameFrame').listeners.load.at(-1)();
+assert(game.document.getElementById('tutorialOverlay').classList.contains('show'));
+await run('closeTutorial()',game);
+assert(main.document.getElementById('topPage').classList.contains('active'));
+assert.equal(JSON.stringify(D.read()),wallet);
+console.log('top guides: all entries, loading, shared iframe, close-to-top, wallet isolation passed');
 console.log('ALL CHECKS PASSED');
 })().catch(e=>{console.error(e);process.exitCode=1});

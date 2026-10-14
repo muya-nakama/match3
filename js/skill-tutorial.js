@@ -42,7 +42,7 @@
   window.MonpatchSkillGame.reset();window.__skillMode=savedSkill;
   seal.reset();shield=null;pausedAt=null;
   tutorialOverlay.classList.remove('skillTutorial');
-  tutorialOverlay.querySelector('.tutorialTitle').textContent='シングルプレイ';
+  tutorialOverlay.querySelector('.tutorialTitle').textContent='基本動作';
   tutorialExitBtn.hidden=false;status.hidden=true;
  }
  async function run(token){

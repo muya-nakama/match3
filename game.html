@@ -1146,17 +1146,6 @@ html,body{
    </div>
   </section>
 
-  <section class="singleSection singleSectionTools" aria-label="メニュー">
-   <div class="singleRow singleRowTools">
-    <button id="tutorialLinkBtn" class="toolActionBtn" type="button">基本チュートリアル</button>
-    <button id="skillTutorialLinkBtn" class="toolActionBtn" type="button">個別妨害チュートリアル</button>
-    <button id="rulesLinkBtn" class="toolActionBtn" type="button">特殊ブロック</button>
-   </div>
-   <div class="singleRow singleRowHistory">
-
-   </div>
-  </section>
-
   <button id="titleHintToggle" class="toggleBtn on" type="button" style="display:none">ヒント ON</button>
  </div>
 </div>
@@ -1221,7 +1210,7 @@ html,body{
 <div id="tutorialOverlay" class="tutorialOverlay" aria-hidden="true">
  <div class="tutorialShell">
   <div class="tutorialTop">
-   <div class="tutorialTitle">シングルプレイ</div>
+   <div class="tutorialTitle">基本動作</div>
    <div class="tutorialTopActions">
     <button id="tutorialPauseBtn" class="tutorialExit" type="button">一時停止</button>
     <button id="tutorialExitBtn" class="tutorialExit" type="button">終了</button>
@@ -1236,7 +1225,7 @@ html,body{
   <div id="tutorialFooter" class="tutorialFooter">盤面が自動で動きます。そのまま見てください。</div>
   <div id="tutorialDoneActions" class="tutorialDoneActions">
    <button id="tutorialReplayBtn" type="button">もう一度見る</button>
-   <button id="tutorialDoneBtn" type="button">タイトルへ戻る</button>
+   <button id="tutorialDoneBtn" type="button">トップへ戻る</button>
   </div>
  </div>
 </div>
@@ -1282,6 +1271,7 @@ html,body{
    <button class="infoClose" data-close-info type="button">戻る</button>
   </div>
 
+<div class="historyItem"><h3><span class="historyVersion">v2.70.2</span>説明メニューをトップへ移動</h3><p>基本動作・特殊ブロック・個別妨害対戦の入口をトップの見出し付き枠へ集約。説明を閉じるとトップへ戻ります。トップの余白とボタンの高さを調整しました。</p></div>
 <div class="historyItem"><h3><span class="historyVersion">v2.70.1</span>個別妨害チュートリアル</h3><p>A〜Hを受けた時と反射防御の自動実演を追加。固定盤面で実際の妨害処理を使い、不要な消去や連鎖は起こしません。一時停止中は効果時間も停止します。所持玉は消費しません。</p></div>
 <div class="historyItem"><h3><span class="historyVersion">v2.70.0</span>個別妨害対戦・デイリー</h3><p>通常対戦を残し、A〜Hの8種類の全体妨害と反射防御を追加。ランキング登録なし。デイリーは毎日3時に共通の5件へ更新。各10pt、全達成ボーナス玉1個、50ptで玉1個交換。玉10個・1500pt上限、持込2個。未使用玉の持帰りとリタイア時半減に対応。威力と攻撃クールタイムは仮設定です。更新履歴をトップへ移動しました。</p></div>
 <div class="historyItem"><h3><span class="historyVersion">v2.69.5</span>内部整理</h3><p>未使用の処理と重複した背景データを整理しました。各モードのルール・得点・操作は従来どおりです。</p></div>
@@ -1374,15 +1364,15 @@ html,body{
  </div>
 </div>
 
-<script src="js/player-identity.js?v=2.70.1"></script>
-<script src="js/ranking-client.js?v=2.70.1"></script>
-<script src="js/audio-settings.js?v=2.70.1"></script>
-<script src="js/skill-rules.js?v=2.70.1"></script>
-<script src="js/game-core.js?v=2.70.1"></script>
-<script src="js/skill-game.js?v=2.70.1"></script>
-<script src="js/tutorial.js?v=2.70.1"></script>
-<script src="js/skill-tutorial.js?v=2.70.1"></script>
-<script src="js/game-ui.js?v=2.70.1"></script>
+<script src="js/player-identity.js?v=2.70.2"></script>
+<script src="js/ranking-client.js?v=2.70.2"></script>
+<script src="js/audio-settings.js?v=2.70.2"></script>
+<script src="js/skill-rules.js?v=2.70.2"></script>
+<script src="js/game-core.js?v=2.70.2"></script>
+<script src="js/skill-game.js?v=2.70.2"></script>
+<script src="js/tutorial.js?v=2.70.2"></script>
+<script src="js/skill-tutorial.js?v=2.70.2"></script>
+<script src="js/game-ui.js?v=2.70.2"></script>
 
 <script>/* service worker disabled in bundled battle mode */</script>
 

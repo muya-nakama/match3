@@ -5,6 +5,7 @@
     }
 
     function markGameLoadFailed(message="ゲーム本体の読み込みに失敗しました") {
+      window.MonpatchTopGuides?.failed();
       battleFrameReady = false;
       if (battleLoadTimer) clearTimeout(battleLoadTimer);
       battleLoadTimer = null;
@@ -25,7 +26,7 @@
 
       try {
         battleLoadAttempt++;
-        const suffix = `?v=2.70.1&retry=${isRetry ? battleLoadAttempt : 0}`;
+        const suffix = `?v=2.70.2&retry=${isRetry ? battleLoadAttempt : 0}`;
         // トップ表示中から裏で読み込み、シングル開始・対戦開始時の端末差を抑える。
         battleGameFrame.src = `game.html${suffix}`;
         battleLoadTimer = setTimeout(() => {

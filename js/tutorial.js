@@ -503,13 +503,14 @@ async function closeTutorial(){
  newBoard(false);
  gameRunning=false;
  updateTimer();
+ window.__guideReturnToTop?.();
 }
 
 tutorialPauseBtn?.addEventListener("click",()=>{
  playDecision();
  setTutorialPaused(!tutorialPaused);
 });
-tutorialLinkBtn?.addEventListener("click",openTutorial);
+document.getElementById('tutorialLinkBtn')?.addEventListener("click",openTutorial);
 tutorialExitBtn?.addEventListener("click",async()=>{playDecision();await closeTutorial();});
 tutorialDoneBtn?.addEventListener("click",async()=>{playDecision();await closeTutorial();});
 tutorialReplayBtn?.addEventListener("click",async()=>{

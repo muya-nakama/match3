@@ -756,7 +756,7 @@ body{
 }
 </style>
 
-<link rel="stylesheet" href="js/icon-cropper.css?v=2.70.1">
+<link rel="stylesheet" href="js/icon-cropper.css?v=2.70.2">
 <style>[hidden]{display:none!important}.profileNameEdit{margin-top:8px!important;font-size:12px!important;padding:8px 12px!important}
 .playerNameSetup.hasSavedName{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;margin:10px 0 12px}
 .hasSavedName .playerNameSetupLabel{display:none}
@@ -800,13 +800,32 @@ body{
 </style>
 <style>
 [hidden]{display:none!important}.latestUpdate{margin:18px 0 12px}.latestUpdate h2{font-size:16px;margin-bottom:8px}.latestUpdate p{font-size:15px;margin:4px 0}.updateNew{color:#ff5260;margin-right:7px}.historyMore{width:auto!important;background:none!important;padding:2px 0!important;margin:3px 0!important;font-size:12px!important;text-decoration:underline}.dailyPanel{margin:14px 0;padding:12px;background:#152030;border-radius:12px;font-size:13px}.dailyPanel summary{cursor:pointer;font-weight:bold}.dailyPanel ul{padding-left:0;list-style:none;line-height:1.9}.dailyPanel button{font-size:13px}#topHistoryDialog{width:min(520px,90vw);max-height:80vh;overflow:auto;border:1px solid #60748e;border-radius:14px;background:#152030;color:#fff}#topHistoryDialog::backdrop{background:#0009}#topHistoryContent h3{font-size:15px}#topHistoryContent p{font-size:13px;line-height:1.6}#skillLobbySettings{margin:16px 0;padding:12px;border:1px solid #59657e;border-radius:12px;font-size:13px}#skillLobbySettings select{display:block;width:100%;margin:8px 0;padding:12px;background:#1d293b;color:white;border-radius:9px;font-size:15px}
+</style><style id="topGuideLayout">
+.topGuideGroup{min-width:0;margin:10px 0 0;padding:7px 9px 10px;border:1px solid #617087;border-radius:12px}
+.topGuideGroup legend{padding:0 7px;font-size:12px;font-weight:800;color:#edf5ff}
+.topGuideButtons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+#topPage .topGuideButtons button{width:100%;min-width:0;margin:0;padding:10px 3px;font-size:11px;line-height:1.4;min-height:44px;border-radius:9px;overflow-wrap:anywhere}
+#topGuideStatus:empty{display:none}#topGuideStatus{font-size:11px;margin:8px 0 0}
+/* 折りたたみを閉じたトップの余白を小さくし、本文とボタンの可読性を保つ。 */
+body>.app{padding:clamp(12px,3vh,24px) 14px 12px}
+#topPage .card{padding:14px}
+#topPage h1{font-size:21px;margin-bottom:4px}
+#topPage .sub{font-size:12px;line-height:1.5;margin-bottom:10px}
+#topPage .modeChoice{gap:7px;margin-top:9px}
+#topPage .modeChoice button{padding:12px 14px;font-size:16px;min-height:44px}
+#topPage .latestUpdate{margin:12px 0 8px}#topPage .latestUpdate h2{font-size:14px;margin:0 0 5px}
+#topPage .latestUpdate p{font-size:12px;line-height:1.5;margin:3px 0}
+#topPage .dailyPanel{margin:9px 0;padding:10px 12px}
+#topPage .topFanmade{margin-top:10px}
+#topPage .creditLine{margin-top:5px;padding-top:6px;line-height:1.45}
+@media(max-height:700px){body>.app{padding-top:10px}#topPage .modeChoice button{padding:10px 12px}#topPage .latestUpdate{margin-top:9px}}
 </style></head>
 <body>
   <main class="app">
     <section id="topPage" class="pageView active">
       <section class="card">
       <h1>モンパッチ</h1>
-      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.70.1</div>
+      <div style="color:#7f8da0;font-size:11px;margin:-2px 0 10px">Ver.2.70.2</div>
       <div class="sub">
         シングルモードとオンライン対戦モードが遊べるマッチパズル。
       </div>
@@ -824,7 +843,7 @@ body{
         <button id="environmentBtn" type="button">⚙ 環境設定</button>
       </div>
       <section class="latestUpdate" aria-label="最新の更新">
-        <h2>更新履歴</h2><p><strong class="updateNew">New</strong> 個別妨害チュートリアルを追加</p>
+        <h2>更新履歴</h2><p><strong class="updateNew">New</strong> チュートリアル・説明をトップへ移動</p>
         <button id="topHistoryMore" class="historyMore" type="button">more...</button>
       </section>
       <details id="dailyPanel" class="dailyPanel"><summary>デイリーミッション・玉の交換</summary>
@@ -835,6 +854,14 @@ body{
         <p>全達成ボーナスは更新時に消失します。玉は10個、ポイントは1500ptまで。進捗と玉はこのブラウザに保存されます。</p><p id="dailyStatus" role="status"></p>
       </details>
       <dialog id="topHistoryDialog"><div class="profileHeader"><h2>更新履歴</h2><button id="topHistoryClose" type="button">閉じる</button></div><div id="topHistoryContent"></div></dialog>
+      <fieldset class="topGuideGroup"><legend>チュートリアル</legend>
+        <div class="topGuideButtons">
+          <button type="button" data-top-guide="basic">基本動作</button>
+          <button type="button" data-top-guide="blocks">特殊ブロック</button>
+          <button type="button" data-top-guide="skill">個別妨害対戦</button>
+        </div>
+        <p id="topGuideStatus" role="status"></p>
+      </fieldset>
       <div class="topFanmade">非公式・ファンメイド</div>
       <div class="creditLine">
         <div>仲間六夜 feat. ChatGPT</div>
@@ -998,21 +1025,22 @@ body{
  <p class="environmentNote">変更は自動保存され、シングル・マルチの両方に反映されます。</p>
  <button id="environmentClose" type="button">閉じる</button>
 </dialog>
-  <script src="js/audio-settings.js?v=2.70.1"></script>
-  <script src="js/environment.js?v=2.70.1"></script>
+  <script src="js/audio-settings.js?v=2.70.2"></script>
+  <script src="js/environment.js?v=2.70.2"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script src="js/player-identity.js?v=2.70.1"></script>
-  <script src="js/icon-cropper.js?v=2.70.1"></script>
-  <script src="js/skill-rules.js?v=2.70.1"></script>
-  <script src="js/daily.js?v=2.70.1"></script>
-  <script src="js/app.js?v=2.70.1"></script>
-  <script src="js/profile.js?v=2.70.1"></script>
-  <script src="js/chat.js?v=2.70.1"></script>
-  <script src="js/multi.js?v=2.70.1"></script>
-  <script src="js/skill-battle.js?v=2.70.1"></script>
-  <script src="js/single.js?v=2.70.1"></script>
-  <script src="js/bootstrap.js?v=2.70.1"></script>
+  <script src="js/player-identity.js?v=2.70.2"></script>
+  <script src="js/icon-cropper.js?v=2.70.2"></script>
+  <script src="js/skill-rules.js?v=2.70.2"></script>
+  <script src="js/daily.js?v=2.70.2"></script>
+  <script src="js/app.js?v=2.70.2"></script>
+  <script src="js/profile.js?v=2.70.2"></script>
+  <script src="js/chat.js?v=2.70.2"></script>
+  <script src="js/multi.js?v=2.70.2"></script>
+  <script src="js/skill-battle.js?v=2.70.2"></script>
+  <script src="js/single.js?v=2.70.2"></script>
+  <script src="js/top-guides.js?v=2.70.2"></script>
+  <script src="js/bootstrap.js?v=2.70.2"></script>
 </body>
 </html>

@@ -1,1 +1,1 @@
-{"name":"monpatch","private":true,"version":"2.70.1","scripts":{"test":"node tests/monpatch.test.cjs"},"devDependencies":{"linkedom":"0.18.13"}}
+{"name":"monpatch","private":true,"version":"2.70.2","scripts":{"test":"node tests/monpatch.test.cjs"},"devDependencies":{"linkedom":"0.18.13"}}
