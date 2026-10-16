@@ -73,14 +73,27 @@ game.demoTick=ms=>{
 game.setTimeout=(f,ms)=>{game.demoTick(ms);queueMicrotask(f);return 1};
 run('trySwap=()=>{throw new Error("unexpected tutorial swap")};',game);
 const wallet=JSON.stringify(D.read()),writesBefore=writes.length;
-const realDemoRun=game.MonpatchSkillTutorial.run;game.MonpatchSkillTutorial.run=token=>game.lastDemo=realDemoRun(token);
+
 async function demo(){
  captures=[];pauseG=false;pauseH=false;
  main.document.querySelector('[data-top-guide=skill]').listeners.click[0]();
  assert.equal(run('gameMode',main),'guide');
  assert(game.document.getElementById('tutorialOverlay').classList.contains('show'));
- assert(game.document.getElementById('tutorialExitBtn').hidden);
- await game.lastDemo;
+ assert(!game.document.getElementById('tutorialExitBtn').hidden);
+ assert.equal(game.document.getElementById('tutorialExitBtn').textContent,'トップへ');
+ assert(!game.document.getElementById('skillTutorialChoices').hidden);
+ assert(game.document.getElementById('tutorialPauseBtn').hidden);
+ assert(game.document.getElementById('tutorialBoardHost').hidden);
+ assert.equal(game.document.querySelectorAll('[data-skill-demo]').length,10);
+ game.document.querySelector('[data-skill-demo=A]').listeners.click[0]();
+ assert(game.document.getElementById('skillTutorialPrevious').disabled);
+ for(let i=0;i<10;i++){
+  await game.MonpatchSkillTutorial.finished;
+  assert(game.document.getElementById('tutorialOverlay').classList.contains('show'),'finish stays on current demo');
+  if(i<9)game.document.getElementById('skillTutorialNext').listeners.click[0]();
+ }
+ assert(game.document.getElementById('skillTutorialNext').disabled);
+ await game.document.getElementById('tutorialExitBtn').listeners.click[0]();
  assert(pauseG&&pauseH,'paused timed effects were exercised');
  assert.equal(game.document.getElementById('tutorialOverlay').classList.contains('show'),false);
  assert(main.document.getElementById('topPage').classList.contains('active'));
@@ -93,10 +106,42 @@ async function demo(){
 const first=await demo();assert.equal(await demo(),first,'fixed demo repeats exactly');
 const demoEvents=JSON.parse(first);assert.equal(demoEvents.length,9);assert.equal(demoEvents.find(e=>e.event==='E'&&!e.reflected).score,90000);assert.deepEqual(demoEvents.filter(e=>e.reflected).map(e=>e.score),[90000,80000]);
 let sealTime=0;const testSeal=R.createAttackSeal(()=>sealTime);testSeal.receive();assert.equal(testSeal.remaining(),30);sealTime=30000;assert.equal(testSeal.remaining(),0);
-// Cancellation clears tutorial state and makes the pending auto-run inert.
-run('tutorialMode=true;gameRunning=true;lock=false;MonpatchSkillTutorial.setup(true);',game);
-await run('closeTutorial()',game);assert.equal(game.__skillMode,false);
-console.log('skill tutorial: full replay ×2, fixed board, G/H pause, F expiry, cleanup, wallet/network isolation passed');
+// Cancel a live F effect while paused: switch immediately, don't wait for 30 seconds.
+let queue=[];game.setTimeout=(f,ms)=>{queue.push({f,ms});return 1};
+main.document.querySelector('[data-top-guide=skill]').listeners.click[0]();
+game.document.querySelector('[data-skill-demo=F]').listeners.click[0]();
+const pendingF=game.MonpatchSkillTutorial.finished;
+for(let i=0;i<40;i++){
+ const task=queue.shift();assert(task);demoTime+=task.ms;task.f();await flush();
+ if(game.document.getElementById('skillTutorialStatus').textContent.includes('封印中'))break;
+}
+assert(game.document.getElementById('skillTutorialStatus').textContent.includes('封印中'));
+const sealStartTime=demoTime;
+game.document.getElementById('tutorialPauseBtn').listeners.click[0]();
+assert.equal(game.document.getElementById('tutorialPauseBtn').textContent,'再開');
+game.document.getElementById('skillTutorialNext').listeners.click[0]();
+assert(game.document.getElementById('tutorialStep').textContent.includes('G：'));
+assert(!game.document.getElementById('skillTutorialStatus').textContent.includes('封印中'));
+assert.equal(game.document.getElementById('tutorialPauseBtn').textContent,'一時停止');
+assert(demoTime-sealStartTime<30000,'F skipped without its full duration');
+// Return to list while G is pending, and release every old callback: no stale effect.
+game.document.getElementById('skillTutorialList').listeners.click[0]();
+while(queue.length){const task=queue.shift();demoTime+=task.ms;task.f();await flush();}
+await pendingF;
+assert(!game.document.getElementById('skillTutorialChoices').hidden);
+assert.equal(game.document.querySelectorAll('.skillMasked,.skillSealed').length,0);
+assert(!run('__skillHasTemporarySeal()',game));
+// Previous/next from an active selection, then top while a wait is pending.
+game.document.querySelector('[data-skill-demo=H]').listeners.click[0]();
+game.document.getElementById('skillTutorialPrevious').listeners.click[0]();
+assert(game.document.getElementById('tutorialStep').textContent.includes('G：'));
+await game.document.getElementById('tutorialExitBtn').listeners.click[0]();
+while(queue.length){const task=queue.shift();demoTime+=task.ms;task.f();await flush();}
+assert.equal(game.__skillMode,false);assert.equal(run('tutorialMode',game),false);
+assert(main.document.getElementById('topPage').classList.contains('active'));
+assert.equal(JSON.stringify(D.read()),wallet);assert.equal(writes.length,writesBefore);
+game.setTimeout=(f,ms)=>{game.demoTick(ms);queueMicrotask(f);return 1};
+console.log('skill tutorial: all selections ×2, fixed board, pause, F skip, previous/next/list/top, stale callbacks, wallet/network isolation passed');
 // All three shared entries are on the top; close and loading paths return there.
 assert.equal(main.document.querySelectorAll('.topGuideGroup [data-top-guide]').length,3);
 assert.equal(game.document.querySelectorAll('#tutorialLinkBtn,#skillTutorialLinkBtn,#rulesLinkBtn').length,0);
